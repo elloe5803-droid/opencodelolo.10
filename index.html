@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>OpenCode Web</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: #0b0b0f;
+      color: #fff;
+      font-family: system-ui, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    .app {
+      display: flex;
+      height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: #111116;
+      border-right: 1px solid #292932;
+      padding: 16px;
+    }
+
+    .logo {
+      font-size: 20px;
+      font-weight: 700;
+      margin-bottom: 25px;
+    }
+
+    .project {
+      padding: 12px;
+      background: #1b1b22;
+      border-radius: 8px;
+      margin-bottom: 10px;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+    }
+
+    .topbar {
+      height: 58px;
+      border-bottom: 1px solid #292932;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 10px;
+    }
+
+    .workspace {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .editor {
+      flex: 1;
+      padding: 20px;
+      overflow: auto;
+    }
+
+    .terminal {
+      width: 320px;
+      background: #08080b;
+      border-left: 1px solid #292932;
+      padding: 15px;
+      font-family: monospace;
+      overflow: auto;
+    }
+
+    .chat {
+      border-top: 1px solid #292932;
+      padding: 12px;
+      display: flex;
+      gap: 8px;
+    }
+
+    input {
+      flex: 1;
+      background: #18181f;
+      color: white;
+      border: 1px solid #30303a;
+      border-radius: 8px;
+      padding: 13px;
+      outline: none;
+    }
+
+    button {
+      border: 0;
+      border-radius: 8px;
+      padding: 0 18px;
+      background: white;
+      color: black;
+      font-weight: 600;
+    }
+
+    pre {
+      color: #ddd;
+      line-height: 1.6;
+    }
+
+    @media (max-width: 700px) {
+      .sidebar {
+        display: none;
+      }
+
+      .terminal {
+        display: none;
+      }
+
+      .editor {
+        padding: 14px;
+      }
+
+      .topbar {
+        height: 52px;
+      }
+
+      .chat {
+        padding: 10px;
+      }
+
+      button {
+        padding: 0 14px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="logo">OpenCode Web</div>
+
+    <div class="project">
+      📁 My Project
+    </div>
+
+    <div>＋ New Session</div>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <strong>OpenCode</strong>
+      <span style="opacity:.5">Web</span>
+    </header>
+
+    <section class="workspace">
+
+      <div class="editor">
+
+        <h2>Welcome to OpenCode Web</h2>
+
+        <p style="opacity:.65">
+          AI coding workspace yang dioptimalkan untuk browser HP.
+        </p>
+
+        <pre>
+project/
+├── src/
+│   ├── index.ts
+│   └── app.ts
+├── package.json
+└── README.md
+        </pre>
+
+      </div>
+
+      <div class="terminal">
+        <div>$ terminal</div>
+        <br>
+        <div>Ready.</div>
+      </div>
+
+    </section>
+
+    <div class="chat">
+      <input
+        id="message"
+        placeholder="Ask AI to write code..."
+      >
+
+      <button onclick="sendMessage()">
+        Send
+      </button>
+    </div>
+
+  </main>
+
+</div>
+
+<script>
+function sendMessage() {
+  const input = document.getElementById("message");
+
+  if (!input.value.trim()) return;
+
+  alert("Pesan AI: " + input.value);
+
+  input.value = "";
+}
+</script>
+
+</body>
+</html>
