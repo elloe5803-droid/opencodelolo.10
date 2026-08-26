@@ -1,7 +1,6 @@
 const state = {
   sessions: [],
-  currentSession: null,
-  messages: []
+  currentSession: null
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -15,28 +14,26 @@ function createSession() {
 
   state.sessions.unshift(session);
   state.currentSession = session.id;
-  state.messages = [];
 
+  saveState();
   renderSessions();
   renderMessages();
 
-  const input = $("#message");
-  if (input) input.focus();
+  $("#message")?.focus();
 }
 
 function getCurrentSession() {
   return state.sessions.find(
-    session => session.id === state.currentSession
+    (session) => session.id === state.currentSession
   );
 }
 
-function sendMessage(event) {
-  if (event) event.preventDefault();
+async function sendMessage(event) {
+  event?.preventDefault();
 
   const input = $("#message");
-  if (!input) return;
+  const text = input?.value.trim();
 
-  const text = input.value.trim();
   if (!text) return;
 
   if (!state.currentSession) {
@@ -52,8 +49,8 @@ function sendMessage(event) {
 
   if (session.title === "New session") {
     session.title =
-      text.length > 28
-        ? text.substring(0, 28) + "..."
+      text.length > 30
+        ? text.substring(0, 30) + "..."
         : text;
   }
 
@@ -61,53 +58,100 @@ function sendMessage(event) {
 
   renderSessions();
   renderMessages();
+  saveState();
 
-  /*
-   * Backend AI akan dihubungkan di tahap berikutnya.
-   * Untuk sekarang kita tampilkan status lokal.
-   */
+  session.messages.push({
+    role: "assistant",
+    content: "Thinking..."
+  });
 
-  setTimeout(() => {
-    session.messages.push({
-      role: "system",
-      content:
-        "AI backend belum terhubung. Frontend berhasil menerima pesan."
+  renderMessages();
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        message: text
+      })
     });
 
-    renderMessages();
-  }, 400);
+    const data = await response.json();
+
+    session.messages.pop();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error || `Request gagal (${response.status})`
+      );
+    }
+
+    session.messages.push({
+      role: "assistant",
+      content: data?.reply || "AI tidak memberikan jawaban."
+    });
+
+  } catch (error) {
+    console.error(error);
+
+    const last =
+      session.messages[session.messages.length - 1];
+
+    if (
+      last &&
+      last.role === "assistant" &&
+      last.content === "Thinking..."
+    ) {
+      session.messages.pop();
+    }
+
+    session.messages.push({
+      role: "assistant",
+      content: "❌ Gagal menghubungi AI.\n\n" + error.message
+    });
+  }
+
+  saveState();
+  renderMessages();
 }
 
 function renderSessions() {
   const container = $("#sessions");
+
   if (!container) return;
 
   container.innerHTML = "";
 
-  state.sessions.forEach(session => {
-    const item = document.createElement("button");
+  state.sessions.forEach((session) => {
+    const button = document.createElement("button");
 
-    item.className =
+    button.className =
       "session" +
       (session.id === state.currentSession
         ? " active"
         : "");
 
-    item.textContent = session.title;
+    button.textContent = session.title;
 
-    item.onclick = () => {
+    button.onclick = () => {
       state.currentSession = session.id;
-      state.messages = session.messages;
+
+      saveState();
       renderSessions();
       renderMessages();
+
+      $(".sidebar")?.classList.remove("open");
     };
 
-    container.appendChild(item);
+    container.appendChild(button);
   });
 }
 
 function renderMessages() {
   const container = $("#messages");
+
   if (!container) return;
 
   container.innerHTML = "";
@@ -116,38 +160,29 @@ function renderMessages() {
 
   if (!session) return;
 
-  session.messages.forEach(message => {
+  session.messages.forEach((message) => {
     const element = document.createElement("div");
 
-    element.className =
-      "message " + message.role;
+    element.className = `message ${message.role}`;
 
-    const label =
-      message.role === "user"
-        ? "You"
-        : "AI";
+    const label = document.createElement("div");
 
-    element.innerHTML = `
-      <div class="message-label">${label}</div>
-      <div class="message-content"></div>
-    `;
+    label.className = "message-label";
+    label.textContent =
+      message.role === "user" ? "You" : "AI";
 
-    element
-      .querySelector(".message-content")
-      .textContent = message.content;
+    const content = document.createElement("div");
+
+    content.className = "message-content";
+    content.textContent = message.content;
+
+    element.appendChild(label);
+    element.appendChild(content);
 
     container.appendChild(element);
   });
 
   container.scrollTop = container.scrollHeight;
-}
-
-function toggleSidebar() {
-  const sidebar = $(".sidebar");
-
-  if (!sidebar) return;
-
-  sidebar.classList.toggle("open");
 }
 
 function saveState() {
@@ -166,20 +201,22 @@ function loadState() {
 
     const data = JSON.parse(saved);
 
-    state.sessions = data.sessions || [];
-    state.currentSession = data.currentSession || null;
+    state.sessions =
+      Array.isArray(data.sessions)
+        ? data.sessions
+        : [];
 
-    const session = getCurrentSession();
+    state.currentSession =
+      data.currentSession || null;
 
-    state.messages =
-      session?.messages || [];
-
-  } catch (error) {
-    console.error(
-      "Could not load saved state:",
-      error
-    );
+  } catch {
+    state.sessions = [];
+    state.currentSession = null;
   }
+}
+
+function toggleSidebar() {
+  $(".sidebar")?.classList.toggle("open");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -191,26 +228,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const input = $("#message");
 
   if (input) {
-    input.addEventListener("keydown", event => {
+    input.addEventListener("keydown", (event) => {
       if (
         event.key === "Enter" &&
         !event.shiftKey
       ) {
         event.preventDefault();
 
-        const form = input.closest("form");
-
-        if (form) {
-          form.requestSubmit();
-        }
+        input.closest("form")?.requestSubmit();
       }
     });
   }
-
-  window.addEventListener(
-    "beforeunload",
-    saveState
-  );
 });
 
 window.createSession = createSession;
