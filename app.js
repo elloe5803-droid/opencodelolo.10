@@ -1,7 +1,8 @@
 const state = {
   sessions: [],
   currentSession: null,
-  search: ""
+  search: "",
+  busy: false
 };
 
 const $ = (selector) => document.querySelector(selector);
@@ -15,7 +16,9 @@ function saveState() {
 
 function loadState() {
   try {
-    const saved = localStorage.getItem("opencode-web-state");
+    const saved = localStorage.getItem(
+      "opencode-web-state"
+    );
 
     if (!saved) return;
 
@@ -25,11 +28,18 @@ function loadState() {
       ? data.sessions
       : [];
 
-    state.currentSession = data.currentSession || null;
+    state.currentSession =
+      data.currentSession || null;
   } catch {
     state.sessions = [];
     state.currentSession = null;
   }
+}
+
+function getCurrentSession() {
+  return state.sessions.find(
+    session => session.id === state.currentSession
+  );
 }
 
 function createSession() {
@@ -46,15 +56,13 @@ function createSession() {
   renderSessions();
   renderMessages();
 
-  $("#message")?.focus();
+  const input = $("#message");
+
+  if (input) {
+    input.focus();
+  }
 
   closeSidebar();
-}
-
-function getCurrentSession() {
-  return state.sessions.find(
-    session => session.id === state.currentSession
-  );
 }
 
 function selectSession(id) {
@@ -68,13 +76,9 @@ function selectSession(id) {
 }
 
 function deleteSession(id) {
-  const index = state.sessions.findIndex(
-    session => session.id === id
+  state.sessions = state.sessions.filter(
+    session => session.id !== id
   );
-
-  if (index === -1) return;
-
-  state.sessions.splice(index, 1);
 
   if (state.currentSession === id) {
     state.currentSession =
@@ -100,51 +104,23 @@ function renderSessions() {
   );
 
   sessions.forEach(session => {
-    const row = document.createElement("div");
-
-    row.style.display = "flex";
-    row.style.alignItems = "center";
-    row.style.gap = "4px";
-
     const button = document.createElement("button");
 
     button.className =
       "session" +
-      (session.id === state.currentSession
-        ? " active"
-        : "");
+      (
+        session.id === state.currentSession
+          ? " active"
+          : ""
+      );
 
     button.textContent = session.title;
 
-    button.onclick = () =>
+    button.onclick = () => {
       selectSession(session.id);
-
-    const deleteButton =
-      document.createElement("button");
-
-    deleteButton.textContent = "×";
-    deleteButton.title = "Delete session";
-
-    deleteButton.style.width = "30px";
-    deleteButton.style.height = "30px";
-    deleteButton.style.borderRadius = "7px";
-    deleteButton.style.background = "transparent";
-    deleteButton.style.color = "#777";
-
-    deleteButton.onclick = (event) => {
-      event.stopPropagation();
-
-      if (
-        confirm("Delete this session?")
-      ) {
-        deleteSession(session.id);
-      }
     };
 
-    row.appendChild(button);
-    row.appendChild(deleteButton);
-
-    container.appendChild(row);
+    container.appendChild(button);
   });
 }
 
@@ -175,14 +151,17 @@ function renderMessages() {
   }
 
   session.messages.forEach(message => {
-    const element = document.createElement("div");
+    const wrapper =
+      document.createElement("div");
 
-    element.className =
-      `message ${message.role}`;
+    wrapper.className =
+      "message " + message.role;
 
-    const label = document.createElement("div");
+    const label =
+      document.createElement("div");
 
-    label.className = "message-label";
+    label.className =
+      "message-label";
 
     label.textContent =
       message.role === "user"
@@ -198,36 +177,41 @@ function renderMessages() {
     content.textContent =
       message.content;
 
-    element.appendChild(label);
-    element.appendChild(content);
+    wrapper.appendChild(label);
+    wrapper.appendChild(content);
 
     if (message.role === "assistant") {
       const copy =
         document.createElement("button");
 
       copy.textContent = "Copy";
+
       copy.style.marginTop = "10px";
-      copy.style.padding = "5px 9px";
+      copy.style.padding = "6px 10px";
       copy.style.borderRadius = "6px";
       copy.style.background = "#222";
       copy.style.color = "#aaa";
 
       copy.onclick = async () => {
-        await navigator.clipboard.writeText(
-          message.content
-        );
+        try {
+          await navigator.clipboard.writeText(
+            message.content
+          );
 
-        copy.textContent = "Copied";
+          copy.textContent = "Copied";
 
-        setTimeout(() => {
-          copy.textContent = "Copy";
-        }, 1200);
+          setTimeout(() => {
+            copy.textContent = "Copy";
+          }, 1000);
+        } catch {
+          alert("Clipboard tidak tersedia.");
+        }
       };
 
-      element.appendChild(copy);
+      wrapper.appendChild(copy);
     }
 
-    container.appendChild(element);
+    container.appendChild(wrapper);
   });
 
   container.scrollTop =
@@ -235,7 +219,11 @@ function renderMessages() {
 }
 
 async function sendMessage(event) {
-  event?.preventDefault();
+  if (event) {
+    event.preventDefault();
+  }
+
+  if (state.busy) return;
 
   const input = $("#message");
 
@@ -251,6 +239,8 @@ async function sendMessage(event) {
 
   const session = getCurrentSession();
 
+  if (!session) return;
+
   session.messages.push({
     role: "user",
     content: text
@@ -258,23 +248,23 @@ async function sendMessage(event) {
 
   if (session.title === "New session") {
     session.title =
-      text.length > 32
-        ? text.substring(0, 32) + "..."
+      text.length > 35
+        ? text.substring(0, 35) + "..."
         : text;
   }
 
   input.value = "";
 
+  state.busy = true;
+
   saveState();
   renderSessions();
   renderMessages();
 
-  const loading = {
+  session.messages.push({
     role: "assistant",
     content: "Thinking..."
-  };
-
-  session.messages.push(loading);
+  });
 
   renderMessages();
 
@@ -283,10 +273,12 @@ async function sendMessage(event) {
       "/api/chat",
       {
         method: "POST",
+
         headers: {
           "Content-Type":
             "application/json"
         },
+
         body: JSON.stringify({
           message: text
         })
@@ -301,7 +293,7 @@ async function sendMessage(event) {
     if (!response.ok) {
       throw new Error(
         data?.error ||
-        "Request failed"
+        "AI request failed"
       );
     }
 
@@ -309,7 +301,7 @@ async function sendMessage(event) {
       role: "assistant",
       content:
         data?.reply ||
-        "AI tidak memberikan jawaban."
+        "AI tidak mengembalikan jawaban."
     });
 
   } catch (error) {
@@ -319,10 +311,14 @@ async function sendMessage(event) {
       role: "assistant",
       content:
         "❌ " +
-        (error.message ||
-          "Gagal menghubungi AI.")
+        (
+          error.message ||
+          "Gagal menghubungi AI."
+        )
     });
   }
+
+  state.busy = false;
 
   saveState();
   renderMessages();
@@ -339,89 +335,119 @@ function searchSessions() {
   renderSessions();
 }
 
-function clearSearch() {
-  state.search = "";
-
-  renderSessions();
-}
-
 function attachFile() {
-  const input =
+  const picker =
     document.createElement("input");
 
-  input.type = "file";
-  input.multiple = true;
+  picker.type = "file";
+  picker.multiple = true;
 
-  input.onchange = () => {
+  picker.onchange = () => {
     const files =
-      Array.from(input.files || []);
+      Array.from(picker.files || []);
 
     if (!files.length) return;
 
-    const message =
-      $("#message");
+    const input = $("#message");
+
+    if (!input) return;
 
     const names =
-      files.map(file => file.name)
-        .join(", ");
+      files.map(file => file.name);
 
-    message.value +=
-      `\n[Attached: ${names}]`;
+    input.value +=
+      "\n[Attached: " +
+      names.join(", ") +
+      "]";
 
-    message.focus();
+    input.focus();
   };
 
-  input.click();
+  picker.click();
+}
+
+async function openFiles() {
+  try {
+    const response =
+      await fetch("/api/files");
+
+    const data =
+      await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data?.error ||
+        "Gagal membaca files"
+      );
+    }
+
+    const files =
+      data.files || [];
+
+    if (!files.length) {
+      alert("Tidak ada file.");
+      return;
+    }
+
+    alert(
+      "PROJECT FILES\n\n" +
+      files
+        .map(file => "📄 " + file)
+        .join("\n")
+    );
+
+  } catch (error) {
+    alert(
+      "File Explorer error:\n" +
+      error.message
+    );
+  }
+}
+
+function openTerminal() {
+  alert(
+    "Terminal belum diaktifkan.\n" +
+    "Kita perlu backend untuk menjalankan command."
+  );
+}
+
+function openSettings() {
+  alert(
+    "Settings akan kita buat setelah workspace selesai."
+  );
 }
 
 function showMoreMenu() {
-  const action =
+  const session =
+    getCurrentSession();
+
+  const choice =
     prompt(
-      "Menu:\n\n1 = New session\n2 = Clear current chat\n3 = Delete current session"
+      "MENU\n\n" +
+      "1 - New session\n" +
+      "2 - Clear chat\n" +
+      "3 - Delete session\n" +
+      "4 - Search sessions"
     );
 
-  if (action === "1") {
+  if (choice === "1") {
     createSession();
   }
 
-  if (action === "2") {
-    const session =
-      getCurrentSession();
-
-    if (!session) return;
-
+  if (choice === "2" && session) {
     session.messages = [];
 
     saveState();
     renderMessages();
   }
 
-  if (action === "3") {
-    const session =
-      getCurrentSession();
-
-    if (session) {
-      deleteSession(session.id);
-    }
+  if (choice === "3" && session) {
+    deleteSession(session.id);
   }
-}
 
-function openFiles() {
-  alert(
-    "File Explorer akan kita aktifkan pada tahap berikutnya."
-  );
-}
-
-function openTerminal() {
-  alert(
-    "Terminal backend akan kita aktifkan pada tahap berikutnya."
-  );
-}
-
-function openSettings() {
-  alert(
-    "Settings akan kita aktifkan pada tahap berikutnya."
-  );
+  if (choice === "4") {
+    searchSessions();
+  }
 }
 
 function toggleSidebar() {
@@ -442,79 +468,119 @@ function closeSidebar() {
   }
 }
 
+function setupButtons() {
+  const newButton =
+    document.querySelector(
+      ".new-session"
+    );
+
+  if (newButton) {
+    newButton.onclick =
+      createSession;
+  }
+
+  const attachButton =
+    document.querySelector(
+      ".attach-button"
+    );
+
+  if (attachButton) {
+    attachButton.onclick =
+      attachFile;
+  }
+
+  const searchButton =
+    document.querySelector(
+      '[title="Search"]'
+    );
+
+  if (searchButton) {
+    searchButton.onclick =
+      searchSessions;
+  }
+
+  const moreButton =
+    document.querySelector(
+      '[title="More"]'
+    );
+
+  if (moreButton) {
+    moreButton.onclick =
+      showMoreMenu;
+  }
+
+  document
+    .querySelectorAll(".footer-button")
+    .forEach(button => {
+
+      const text =
+        button.textContent
+          .trim()
+          .toLowerCase();
+
+      if (text.includes("files")) {
+        button.onclick =
+          openFiles;
+      }
+
+      if (text.includes("terminal")) {
+        button.onclick =
+          openTerminal;
+      }
+
+      if (text.includes("settings")) {
+        button.onclick =
+          openSettings;
+      }
+    });
+}
+
+function setupInput() {
+  const input = $("#message");
+
+  if (!input) return;
+
+  input.addEventListener(
+    "keydown",
+    event => {
+
+      if (
+        event.key === "Enter" &&
+        !event.shiftKey
+      ) {
+        event.preventDefault();
+
+        input
+          .closest("form")
+          ?.requestSubmit();
+      }
+    }
+  );
+
+  input.addEventListener(
+    "input",
+    () => {
+      input.style.height = "auto";
+
+      input.style.height =
+        Math.min(
+          input.scrollHeight,
+          180
+        ) + "px";
+    }
+  );
+}
+
 document.addEventListener(
   "DOMContentLoaded",
   () => {
+
     loadState();
 
     renderSessions();
     renderMessages();
 
-    const input =
-      $("#message");
-
-    if (input) {
-      input.addEventListener(
-        "keydown",
-        event => {
-          if (
-            event.key === "Enter" &&
-            !event.shiftKey
-          ) {
-            event.preventDefault();
-
-            input
-              .closest("form")
-              ?.requestSubmit();
-          }
-        }
-      );
-    }
-
-    document
-      .querySelector(".attach-button")
-      ?.addEventListener(
-        "click",
-        attachFile
-      );
-
-    const searchButton =
-      document.querySelector(
-        '[title="Search"]'
-      );
-
-    searchButton?.addEventListener(
-      "click",
-      searchSessions
-    );
-
-    const moreButton =
-      document.querySelector(
-        '[title="More"]'
-      );
-
-    moreButton?.addEventListener(
-      "click",
-      showMoreMenu
-    );
-
-    document
-      .querySelectorAll(".footer-button")
-      .forEach(button => {
-        const text =
-          button.textContent.trim();
-
-        if (text.includes("Files")) {
-          button.onclick = openFiles;
-        }
-
-        if (text.includes("Terminal")) {
-          button.onclick = openTerminal;
-        }
-
-        if (text.includes("Settings")) {
-          button.onclick = openSettings;
-        }
-      });
+    setupButtons();
+    setupInput();
   }
 );
