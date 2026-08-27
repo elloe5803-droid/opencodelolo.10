@@ -1,128 +1,128 @@
 export default async function handler(req, res) {
+  // Hanya menerima POST
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method not allowed"
+      error: "Method Not Allowed"
     });
   }
 
   try {
+    // Ambil pesan dari browser
     const message = req.body?.message;
 
     if (
       typeof message !== "string" ||
-      !message.trim()
+      message.trim() === ""
     ) {
       return res.status(400).json({
-        error: "Message is required"
+        error: "Pesan kosong"
       });
     }
 
-    const apiKey =
-      process.env.OPENROUTER_API_KEY;
+    // Ambil API key dari Vercel
+    let apiKey = process.env.OPENROUTER_API_KEY;
 
-    if (
-      !apiKey ||
-      typeof apiKey !== "string" ||
-      !apiKey.trim()
-    ) {
-      console.error(
-        "OPENROUTER_API_KEY tidak tersedia"
-      );
-
+    if (!apiKey) {
       return res.status(500).json({
         error:
           "OPENROUTER_API_KEY belum tersedia di Vercel"
       });
     }
 
-    const upstream =
-      await fetch(
-        "https://openrouter.ai/api/v1/chat/completions",
-        {
-          method: "POST",
+    // Bersihkan jika value Vercel tidak sengaja diberi
+    // tanda kutip atau prefix Bearer
+    apiKey = apiKey
+      .trim()
+      .replace(/^Bearer\s+/i, "")
+      .replace(/^["']|["']$/g, "");
 
-          headers: {
-            "Authorization":
-              "Bearer " + apiKey.trim(),
+    if (!apiKey) {
+      return res.status(500).json({
+        error: "OPENROUTER_API_KEY kosong"
+      });
+    }
 
-            "Content-Type":
-              "application/json",
+    // Kirim ke OpenRouter
+    const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+        method: "POST",
 
-            "HTTP-Referer":
-              "https://opencodelolo-10.vercel.app",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${apiKey}`,
+          "HTTP-Referer":
+            "https://opencodelolo-10.vercel.app",
+          "X-Title": "OpenCode Lolo"
+        },
 
-            "X-Title":
-              "OpenCode Lolo"
-          },
+        body: JSON.stringify({
+          model: "openrouter/free",
 
-          body: JSON.stringify({
-            model: "openrouter/free",
-
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a helpful coding assistant. Help with programming, debugging, web development, and code."
-              },
-              {
-                role: "user",
-                content: message.trim()
-              }
-            ]
-          })
-        }
-      );
-
-    const data =
-      await upstream.json();
-
-    console.log(
-      "OpenRouter status:",
-      upstream.status
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are an expert AI coding assistant. Help the user create, debug, explain, and improve websites and code. Give practical and accurate answers."
+            },
+            {
+              role: "user",
+              content: message.trim()
+            }
+          ]
+        })
+      }
     );
 
-    if (!upstream.ok) {
+    // Baca response
+    const data = await response.json();
+
+    // Kalau OpenRouter mengembalikan error
+    if (!response.ok) {
       console.error(
         "OpenRouter error:",
+        response.status,
         data
       );
 
       return res.status(502).json({
         error:
           data?.error?.message ||
-          "OpenRouter request failed"
+          `OpenRouter error (${response.status})`
       });
     }
 
+    // Ambil jawaban AI
     const reply =
       data?.choices?.[0]?.message?.content;
 
     if (!reply) {
       console.error(
-        "OpenRouter response:",
+        "Response OpenRouter tidak memiliki reply:",
         data
       );
 
       return res.status(502).json({
         error:
-          "AI tidak mengembalikan jawaban"
+          "OpenRouter tidak mengembalikan jawaban AI"
       });
     }
 
+    // Kirim jawaban ke frontend
     return res.status(200).json({
       reply
     });
 
   } catch (error) {
     console.error(
-      "CHAT ERROR:",
+      "API CHAT ERROR:",
       error
     );
 
     return res.status(500).json({
       error:
         error?.message ||
-        "Internal server error"
+        "Terjadi kesalahan pada server"
     });
   }
 }
