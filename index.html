@@ -1,16 +1,29 @@
+# index.html — OpenCodeLolo.10
+
 ```html
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
-
-  <title>OPENCODELO.10</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0b0b" />
+  <title>OpenCodeLolo.10</title>
 
   <style>
+    :root {
+      --bg: #0b0b0b;
+      --sidebar: #101010;
+      --panel: #151515;
+      --panel-hover: #1b1b1b;
+      --border: #242424;
+      --text: #f1f1f1;
+      --muted: #8b8b8b;
+      --muted-2: #666;
+      --accent: #ffffff;
+      --accent-text: #0b0b0b;
+      --danger: #ff6b6b;
+    }
+
     * {
       box-sizing: border-box;
     }
@@ -20,9 +33,11 @@
       width: 100%;
       height: 100%;
       margin: 0;
-      overflow: hidden;
-      background: #080808;
-      color: #d7d7d7;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
       font-family:
         Inter,
         ui-sans-serif,
@@ -31,6 +46,7 @@
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
+      overflow: hidden;
     }
 
     button,
@@ -41,971 +57,820 @@
     }
 
     button {
-      user-select: none;
+      border: 0;
+      cursor: pointer;
     }
 
-    #app {
-      display: flex;
+    /* =========================
+       APP SHELL
+       ========================= */
+
+    .app {
       width: 100%;
       height: 100%;
-      background: #080808;
+      display: flex;
+      background: var(--bg);
     }
 
     /* =========================
        SIDEBAR
-    ========================= */
+       ========================= */
 
     .sidebar {
-      width: 238px;
-      min-width: 238px;
+      width: 232px;
       height: 100%;
+      flex-shrink: 0;
       display: flex;
       flex-direction: column;
-      background: #0b0b0b;
-      border-right: 1px solid #1b1b1b;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      padding: 14px 10px;
     }
 
     .brand {
-      height: 56px;
       display: flex;
       align-items: center;
-      gap: 10px;
-      padding: 0 16px;
-      border-bottom: 1px solid #171717;
+      gap: 9px;
+      padding: 9px 10px 20px;
+      color: #fff;
+      font-size: 14px;
+      font-weight: 650;
+      letter-spacing: -0.01em;
     }
 
     .brand-mark {
-      width: 27px;
-      height: 27px;
+      width: 22px;
+      height: 22px;
       display: grid;
       place-items: center;
-      border: 1px solid #3a3a3a;
       border-radius: 6px;
-      color: #fff;
-      font-size: 9px;
+      background: #fff;
+      color: #000;
+      font-size: 11px;
       font-weight: 800;
-      letter-spacing: -.5px;
     }
 
     .brand-name {
-      color: #eee;
-      font-size: 12px;
+      white-space: nowrap;
+    }
+
+    .new-chat {
+      width: 100%;
+      height: 38px;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      padding: 0 11px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      background: transparent;
+      color: #ddd;
+      font-size: 13px;
+      text-align: left;
+      transition: background .15s ease, border-color .15s ease;
+    }
+
+    .new-chat:hover {
+      background: var(--panel-hover);
+      border-color: #333;
+    }
+
+    .plus {
+      color: #aaa;
+      font-size: 17px;
+      line-height: 1;
+    }
+
+    .section-label {
+      padding: 0 11px 7px;
+      color: var(--muted-2);
+      font-size: 10px;
       font-weight: 650;
-      letter-spacing: -.2px;
-    }
-
-    .brand-version {
-      color: #555;
-      font-size: 9px;
-      margin-left: auto;
-    }
-
-    .sidebar-scroll {
-      flex: 1;
-      overflow-y: auto;
-      padding: 12px 9px;
-    }
-
-    .nav-label {
-      padding: 8px 8px 6px;
-      color: #444;
-      font-size: 8px;
+      letter-spacing: .08em;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
     }
 
-    .nav-button {
+    .nav {
+      display: grid;
+      gap: 2px;
+    }
+
+    .nav-button,
+    .bottom-button {
       width: 100%;
       height: 35px;
       display: flex;
       align-items: center;
       gap: 10px;
       padding: 0 10px;
-      margin-bottom: 2px;
-      border: 0;
-      border-radius: 5px;
+      border-radius: 6px;
       background: transparent;
-      color: #777;
-      cursor: pointer;
+      color: #9b9b9b;
+      font-size: 13px;
       text-align: left;
-      font-size: 10px;
+      transition: color .15s ease, background .15s ease;
     }
 
-    .nav-button:hover {
-      background: #141414;
-      color: #ccc;
+    .nav-button:hover,
+    .bottom-button:hover {
+      background: #181818;
+      color: #ddd;
     }
 
     .nav-button.active {
-      background: #171717;
-      color: #eee;
+      background: #1c1c1c;
+      color: #fff;
     }
 
-    .nav-icon {
+    .icon {
       width: 16px;
-      color: #555;
-      text-align: center;
-      font-size: 11px;
-    }
-
-    .nav-button.active .nav-icon {
-      color: #aaa;
+      min-width: 16px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      color: currentColor;
+      font-size: 14px;
     }
 
     .sidebar-bottom {
-      padding: 9px;
-      border-top: 1px solid #171717;
-    }
-
-    .connection {
-      width: 100%;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px;
-      margin-bottom: 5px;
-      border: 1px solid #191919;
-      border-radius: 5px;
-      background: #0d0d0d;
-    }
-
-    .connection-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #444;
-    }
-
-    .connection-dot.online {
-      background: #aaa;
-    }
-
-    .connection-text {
-      min-width: 0;
-      overflow: hidden;
-      color: #666;
-      font-size: 9px;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+      margin-top: auto;
+      display: grid;
+      gap: 2px;
+      padding-top: 12px;
+      border-top: 1px solid #1b1b1b;
     }
 
     /* =========================
        MAIN
-    ========================= */
+       ========================= */
 
     .main {
       min-width: 0;
-      flex: 1;
       height: 100%;
+      flex: 1;
       display: flex;
       flex-direction: column;
     }
 
     .topbar {
-      height: 56px;
-      min-height: 56px;
+      height: 48px;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
-      padding: 0 17px;
-      border-bottom: 1px solid #171717;
+      padding: 0 18px;
+      border-bottom: 1px solid var(--border);
+      background: rgba(11, 11, 11, .96);
     }
 
     .top-title {
-      color: #aaa;
-      font-size: 11px;
-      font-weight: 550;
+      color: #d8d8d8;
+      font-size: 13px;
+      font-weight: 500;
     }
 
     .top-spacer {
       flex: 1;
     }
 
-    .top-status {
-      color: #444;
-      font-size: 9px;
-      margin-right: 10px;
+    .model-select {
+      max-width: 210px;
+      border: 1px solid transparent;
+      outline: none;
+      background: transparent;
+      color: #8f8f8f;
+      padding: 5px 7px;
+      border-radius: 6px;
+      font-size: 12px;
     }
 
-    .top-button {
-      height: 29px;
-      padding: 0 10px;
-      border: 1px solid #242424;
-      border-radius: 5px;
-      background: #101010;
-      color: #777;
-      cursor: pointer;
-      font-size: 9px;
+    .model-select:hover {
+      background: #171717;
+      color: #ddd;
     }
 
-    .top-button:hover {
-      background: #181818;
-      color: #ccc;
+    /* =========================
+       VIEWS
+       ========================= */
+
+    .content {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+    }
+
+    .view {
+      width: 100%;
+      height: 100%;
+      display: none;
+    }
+
+    .view.active {
+      display: flex;
     }
 
     /* =========================
        CHAT
-    ========================= */
+       ========================= */
 
     .chat-view {
-      min-height: 0;
-      flex: 1;
-      display: flex;
       flex-direction: column;
     }
 
     .messages {
-      min-height: 0;
       flex: 1;
+      min-height: 0;
       overflow-y: auto;
-      padding: 28px 20px 120px;
+      scrollbar-width: thin;
+      scrollbar-color: #333 transparent;
+      padding: 0 20px;
     }
 
-    .welcome {
-      width: min(720px, 100%);
-      margin: 70px auto 0;
+    .messages-inner {
+      width: min(850px, 100%);
+      min-height: 100%;
+      margin: 0 auto;
+      padding: 48px 0 100px;
+    }
+
+    .empty {
+      min-height: 420px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
     }
 
-    .welcome-mark {
-      width: 42px;
-      height: 42px;
+    .empty-content {
+      max-width: 520px;
+    }
+
+    .empty-logo {
+      width: 38px;
+      height: 38px;
       display: grid;
       place-items: center;
-      margin: 0 auto 18px;
-      border: 1px solid #303030;
-      border-radius: 9px;
-      color: #ddd;
-      font-size: 12px;
+      margin: 0 auto 20px;
+      border-radius: 10px;
+      background: #eee;
+      color: #111;
+      font-size: 15px;
       font-weight: 800;
     }
 
-    .welcome h1 {
+    .empty h1 {
       margin: 0;
-      color: #ddd;
-      font-size: 25px;
+      color: #ededed;
+      font-size: 24px;
       font-weight: 600;
-      letter-spacing: -.8px;
+      letter-spacing: -.035em;
     }
 
-    .welcome p {
-      margin: 9px 0 25px;
-      color: #555;
-      font-size: 11px;
+    .empty p {
+      margin: 10px 0 0;
+      color: #707070;
+      font-size: 13px;
+      line-height: 1.6;
     }
 
-    .suggestions {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 7px;
-      text-align: left;
-    }
-
-    .suggestion {
-      min-height: 75px;
-      padding: 12px;
-      border: 1px solid #1d1d1d;
-      border-radius: 6px;
-      background: #0d0d0d;
-      color: #999;
-      cursor: pointer;
-      text-align: left;
-    }
-
-    .suggestion:hover {
-      border-color: #303030;
-      background: #111;
-    }
-
-    .suggestion-title {
-      color: #bbb;
-      font-size: 10px;
-      margin-bottom: 5px;
-    }
-
-    .suggestion-desc {
-      color: #4f4f4f;
-      font-size: 9px;
-      line-height: 1.5;
-    }
-
-    .message {
-      width: min(850px, 100%);
-      margin: 0 auto 18px;
-    }
-
-    .message-role {
-      margin-bottom: 6px;
-      color: #555;
-      font-size: 8px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .message.user .message-role {
-      color: #777;
-    }
-
-    .message-content {
-      padding: 11px 13px;
-      border: 1px solid #1c1c1c;
-      border-radius: 6px;
-      background: #0d0d0d;
-      color: #bbb;
-      font-size: 11px;
-      line-height: 1.7;
+    .msg {
+      margin: 0 0 28px;
+      line-height: 1.65;
+      font-size: 14px;
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
 
-    .message.assistant .message-content {
-      background: #0a0a0a;
-      border-color: #151515;
+    .msg.user {
+      color: #f0f0f0;
     }
 
-    /* =========================
-       COMPOSER
-    ========================= */
+    .msg.ai {
+      color: #c4c4c4;
+    }
 
     .composer-wrap {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      left: 238px;
-      padding: 15px 20px 18px;
+      flex-shrink: 0;
+      padding: 0 20px 18px;
       background:
         linear-gradient(
-          to top,
-          #080808 65%,
-          rgba(8,8,8,0)
+          to bottom,
+          transparent,
+          var(--bg) 24%
         );
     }
 
     .composer {
       width: min(850px, 100%);
-      margin: auto;
-      border: 1px solid #252525;
-      border-radius: 8px;
-      background: #0d0d0d;
-      box-shadow: 0 18px 50px rgba(0,0,0,.35);
+      margin: 0 auto;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      background: #111;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .25);
     }
 
     .composer textarea {
       width: 100%;
-      min-height: 50px;
-      max-height: 180px;
+      min-height: 58px;
+      max-height: 220px;
       display: block;
-      padding: 13px;
       resize: none;
+      padding: 15px 15px 9px;
       border: 0;
       outline: 0;
       background: transparent;
-      color: #ddd;
-      font-size: 11px;
-      line-height: 1.6;
+      color: #eee;
+      font-size: 14px;
+      line-height: 1.5;
     }
 
     .composer textarea::placeholder {
-      color: #414141;
+      color: #555;
     }
 
-    .composer-bottom {
-      height: 38px;
+    .composer-footer {
+      min-height: 38px;
       display: flex;
       align-items: center;
-      padding: 0 8px;
-      border-top: 1px solid #191919;
+      padding: 0 9px 8px 12px;
     }
 
-    .composer-select {
-      height: 26px;
-      padding: 0 7px;
-      border: 0;
-      outline: 0;
-      background: transparent;
-      color: #666;
-      cursor: pointer;
-      font-size: 9px;
+    .composer-hint {
+      color: #555;
+      font-size: 11px;
     }
 
     .composer-spacer {
       flex: 1;
     }
 
-    .send-button {
-      width: 28px;
-      height: 27px;
-      border: 1px solid #292929;
-      border-radius: 5px;
-      background: #151515;
-      color: #aaa;
-      cursor: pointer;
+    .send {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 7px;
+      background: #eee;
+      color: #111;
+      font-size: 14px;
+      font-weight: 700;
+      transition: opacity .15s ease, transform .15s ease;
     }
 
-    .send-button:hover {
-      background: #222;
-      color: #fff;
+    .send:hover {
+      opacity: .85;
     }
 
-    .send-button:disabled {
-      opacity: .4;
-      cursor: default;
-    }
-
-    /* =========================
-       WORKSPACE
-    ========================= */
-
-    .workspace {
-      position: fixed;
-      inset: 56px 0 0 238px;
-      display: none;
-      flex-direction: column;
-      background: #090909;
-      z-index: 20;
-    }
-
-    .workspace.open {
-      display: flex;
-    }
-
-    .workspace-header {
-      height: 43px;
-      min-height: 43px;
-      display: flex;
-      align-items: center;
-      padding: 0 17px;
-      border-bottom: 1px solid #181818;
-    }
-
-    .workspace-title {
-      color: #999;
-      font-size: 10px;
-    }
-
-    .workspace-close {
-      width: 28px;
-      height: 27px;
-      margin-left: auto;
-      border: 0;
-      border-radius: 5px;
-      background: transparent;
-      color: #555;
-      cursor: pointer;
-      font-size: 16px;
-    }
-
-    .workspace-close:hover {
-      background: #151515;
-      color: #aaa;
-    }
-
-    .workspace-body {
-      flex: 1;
-      min-height: 0;
-      overflow: auto;
-      padding: 18px;
+    .send:active {
+      transform: scale(.95);
     }
 
     /* =========================
        SETTINGS
-    ========================= */
+       ========================= */
 
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      background: rgba(0,0,0,.76);
-      backdrop-filter: blur(8px);
-    }
-
-    .overlay.open {
-      display: flex;
+    .settings-view {
+      overflow-y: auto;
     }
 
     .settings {
-      width: min(550px, calc(100vw - 30px));
-      max-height: calc(100vh - 30px);
-      overflow: auto;
+      width: min(720px, 100%);
+      margin: 0 auto;
+      padding: 44px 24px 80px;
+    }
+
+    .settings-title {
+      margin: 0;
+      font-size: 22px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+    }
+
+    .settings-subtitle {
+      margin: 8px 0 32px;
+      color: #6e6e6e;
+      font-size: 13px;
+    }
+
+    .setting-group {
+      margin-bottom: 22px;
+    }
+
+    .setting-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #a7a7a7;
+      font-size: 12px;
+    }
+
+    .setting-input,
+    .setting-select {
+      width: 100%;
+      height: 40px;
+      padding: 0 11px;
       border: 1px solid #292929;
-      border-radius: 9px;
-      background: #0d0d0d;
-      box-shadow: 0 30px 100px rgba(0,0,0,.7);
+      border-radius: 7px;
+      outline: none;
+      background: #111;
+      color: #e7e7e7;
+      font-size: 13px;
     }
 
-    .settings-head {
-      display: flex;
-      align-items: center;
-      padding: 17px;
-      border-bottom: 1px solid #1c1c1c;
+    .setting-input:focus,
+    .setting-select:focus {
+      border-color: #444;
     }
 
-    .settings-head-title {
-      color: #ddd;
+    .setting-help {
+      margin-top: 7px;
+      color: #555;
+      font-size: 11px;
+      line-height: 1.5;
+    }
+
+    .save-settings {
+      height: 38px;
+      padding: 0 15px;
+      border-radius: 7px;
+      background: #eee;
+      color: #111;
       font-size: 13px;
       font-weight: 600;
     }
 
-    .settings-head-sub {
-      margin-top: 4px;
-      color: #505050;
-      font-size: 9px;
-    }
-
-    .settings-close {
-      width: 29px;
-      height: 29px;
-      margin-left: auto;
-      border: 0;
-      border-radius: 5px;
-      background: transparent;
-      color: #555;
-      cursor: pointer;
-      font-size: 18px;
-    }
-
-    .settings-close:hover {
-      background: #171717;
-      color: #aaa;
-    }
-
-    .settings-body {
-      padding: 17px;
-    }
-
-    .field-group {
-      margin-bottom: 16px;
-    }
-
-    .field-label {
-      display: block;
-      margin-bottom: 7px;
-      color: #999;
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: .8px;
-    }
-
-    .field,
-    .field-select {
-      width: 100%;
-      height: 37px;
-      padding: 0 10px;
-      border: 1px solid #292929;
-      border-radius: 5px;
-      outline: 0;
-      background: #090909;
-      color: #ccc;
-      font-size: 10px;
-    }
-
-    .field:focus,
-    .field-select:focus {
-      border-color: #444;
-    }
-
-    .key-row {
-      display: flex;
-      gap: 7px;
-    }
-
-    .key-row .field {
-      flex: 1;
-    }
-
-    .small-button {
-      height: 37px;
-      padding: 0 11px;
-      border: 1px solid #292929;
-      border-radius: 5px;
-      background: #111;
-      color: #777;
-      cursor: pointer;
-      font-size: 9px;
-    }
-
-    .small-button:hover {
-      background: #191919;
-      color: #ccc;
-    }
-
-    .hint {
-      margin-top: 6px;
-      color: #444;
-      font-size: 8px;
-      line-height: 1.5;
-    }
-
-    .settings-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 7px;
-      margin-top: 20px;
-    }
-
-    .save-button {
-      height: 36px;
-      padding: 0 14px;
-      border: 1px solid #ddd;
-      border-radius: 5px;
-      background: #ddd;
-      color: #080808;
-      cursor: pointer;
-      font-size: 9px;
-      font-weight: 600;
-    }
-
-    .save-button:hover {
+    .save-settings:hover {
       background: #fff;
     }
 
-    .test-button {
-      height: 36px;
-      padding: 0 14px;
-      border: 1px solid #292929;
-      border-radius: 5px;
-      background: #111;
-      color: #999;
-      cursor: pointer;
-      font-size: 9px;
+    /* =========================
+       FILES
+       ========================= */
+
+    .files-view {
+      overflow-y: auto;
     }
 
-    .test-button:hover {
-      background: #191919;
-      color: #ddd;
+    .files {
+      width: min(850px, 100%);
+      margin: 0 auto;
+      padding: 44px 24px;
     }
 
-    .settings-status {
-      margin-top: 10px;
-      padding: 9px;
-      border: 1px solid #191919;
-      border-radius: 5px;
+    .page-title {
+      margin: 0 0 7px;
+      font-size: 21px;
+      font-weight: 600;
+      letter-spacing: -.025em;
+    }
+
+    .page-description {
+      margin: 0 0 28px;
+      color: #666;
+      font-size: 13px;
+    }
+
+    .file-placeholder {
+      padding: 28px;
+      border: 1px dashed #292929;
+      border-radius: 9px;
       color: #555;
-      font-size: 9px;
+      text-align: center;
+      font-size: 13px;
     }
 
     /* =========================
-       RESPONSIVE
-    ========================= */
+       TERMINAL
+       ========================= */
+
+    .terminal-view {
+      overflow: hidden;
+    }
+
+    .terminal {
+      width: 100%;
+      height: 100%;
+      padding: 20px;
+      overflow: auto;
+      background: #090909;
+      color: #bdbdbd;
+      font-family:
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        Monaco,
+        Consolas,
+        monospace;
+      font-size: 12px;
+      line-height: 1.7;
+    }
+
+    /* =========================
+       MOBILE
+       ========================= */
 
     @media (max-width: 700px) {
       .sidebar {
-        width: 55px;
-        min-width: 55px;
+        width: 58px;
+        padding: 10px 6px;
       }
 
       .brand {
         justify-content: center;
-        padding: 0;
+        padding-left: 0;
+        padding-right: 0;
       }
 
       .brand-name,
-      .brand-version,
-      .nav-label,
-      .connection-text {
+      .new-chat span:not(.plus),
+      .section-label,
+      .nav-button span:not(.icon),
+      .bottom-button span:not(.icon) {
         display: none;
       }
 
-      .nav-button {
+      .brand-mark {
+        width: 28px;
+        height: 28px;
+      }
+
+      .new-chat,
+      .nav-button,
+      .bottom-button {
         justify-content: center;
         padding: 0;
       }
 
-      .nav-icon {
-        width: auto;
+      .topbar {
+        padding: 0 12px;
       }
 
-      .sidebar-bottom {
-        padding: 6px;
-      }
-
-      .connection {
-        justify-content: center;
-        padding: 10px 0;
-      }
-
+      .messages,
       .composer-wrap {
-        left: 55px;
+        padding-left: 12px;
+        padding-right: 12px;
       }
 
-      .workspace {
-        left: 55px;
+      .messages-inner {
+        padding-top: 28px;
       }
 
-      .suggestions {
-        grid-template-columns: 1fr;
+      .settings,
+      .files {
+        padding-left: 18px;
+        padding-right: 18px;
       }
     }
   </style>
 </head>
 
 <body>
-
-  <div id="app">
+  <div class="app">
 
     <!-- SIDEBAR -->
-
     <aside class="sidebar">
 
       <div class="brand">
-        <div class="brand-mark">O10</div>
-
-        <div class="brand-name">
-          OPENCODELO.10
-        </div>
-
-        <div class="brand-version">
-          1.0
-        </div>
+        <div class="brand-mark">O</div>
+        <div class="brand-name">OpenCodeLolo.10</div>
       </div>
 
-      <div class="sidebar-scroll">
+      <button class="new-chat" id="newChat">
+        <span class="plus">+</span>
+        <span>New Chat</span>
+      </button>
 
-        <div class="nav-label">
-          Workspace
-        </div>
+      <div class="section-label">Workspace</div>
 
-        <button
-          class="nav-button active"
-          data-view="chat"
-          type="button"
-        >
-          <span class="nav-icon">◉</span>
+      <nav class="nav">
+        <button class="nav-button active" data-view="chat">
+          <span class="icon">◉</span>
           <span>Chat</span>
         </button>
 
-        <button
-          class="nav-button"
-          data-view="files"
-          type="button"
-        >
-          <span class="nav-icon">▤</span>
+        <button class="nav-button" data-view="files">
+          <span class="icon">□</span>
           <span>Files</span>
         </button>
 
-        <button
-          class="nav-button"
-          data-view="editor"
-          type="button"
-        >
-          <span class="nav-icon">⌘</span>
-          <span>Editor</span>
-        </button>
-
-        <button
-          class="nav-button"
-          data-view="terminal"
-          type="button"
-        >
-          <span class="nav-icon">›_</span>
+        <button class="nav-button" data-view="terminal">
+          <span class="icon">›_</span>
           <span>Terminal</span>
         </button>
-
-        <button
-          class="nav-button"
-          data-view="git"
-          type="button"
-        >
-          <span class="nav-icon">⑂</span>
-          <span>Git</span>
-        </button>
-
-        <button
-          class="nav-button"
-          data-view="search"
-          type="button"
-        >
-          <span class="nav-icon">⌕</span>
-          <span>Search</span>
-        </button>
-
-        <div class="nav-label">
-          Session
-        </div>
-
-        <button
-          id="new-chat-button"
-          class="nav-button"
-          type="button"
-        >
-          <span class="nav-icon">＋</span>
-          <span>New Chat</span>
-        </button>
-
-        <button
-          id="upload-button"
-          class="nav-button"
-          type="button"
-        >
-          <span class="nav-icon">↑</span>
-          <span>Upload Files</span>
-        </button>
-
-        <button
-          id="history-button"
-          class="nav-button"
-          type="button"
-        >
-          <span class="nav-icon">◷</span>
-          <span>History</span>
-        </button>
-
-        <div class="nav-label">
-          Configuration
-        </div>
-
-        <button
-          id="settings-button"
-          class="nav-button"
-          type="button"
-        >
-          <span class="nav-icon">⚙</span>
-          <span>Settings</span>
-        </button>
-
-      </div>
+      </nav>
 
       <div class="sidebar-bottom">
 
-        <div class="connection">
-          <span
-            id="connection-dot"
-            class="connection-dot"
-          ></span>
+        <button class="bottom-button" data-view="settings">
+          <span class="icon">⚙</span>
+          <span>Settings</span>
+        </button>
 
-          <span
-            id="connection-text"
-            class="connection-text"
-          >
-            Configure AI
-          </span>
-        </div>
+        <button class="bottom-button" id="themeBtn">
+          <span class="icon">◐</span>
+          <span>Theme</span>
+        </button>
 
       </div>
 
     </aside>
 
     <!-- MAIN -->
-
     <main class="main">
 
       <header class="topbar">
-
-        <div
-          id="top-title"
-          class="top-title"
-        >
-          Chat
-        </div>
+        <div class="top-title" id="viewTitle">Chat</div>
 
         <div class="top-spacer"></div>
 
-        <div
-          id="model-status"
-          class="top-status"
-        >
-          Configure AI
-        </div>
-
-        <button
-          id="top-settings"
-          class="top-button"
-          type="button"
-        >
-          Settings
-        </button>
-
+        <select
+          class="model-select"
+          id="modelQuick"
+          aria-label="Model"
+        ></select>
       </header>
 
-      <!-- CHAT -->
+      <section class="content">
 
-      <section
-        id="chat-view"
-        class="chat-view"
-      >
+        <!-- CHAT -->
+        <div class="view chat-view active" id="view-chat">
 
-        <div
-          id="messages"
-          class="messages"
-        >
+          <div class="messages" id="messages">
+            <div class="messages-inner">
 
-          <div class="welcome">
+              <div class="empty" id="empty">
+                <div class="empty-content">
 
-            <div class="welcome-mark">
-              O10
+                  <div class="empty-logo">O</div>
+
+                  <h1>OpenCodeLolo.10</h1>
+
+                  <p>
+                    Your AI coding workspace.
+                    Ask a question, build something,
+                    or start a new project.
+                  </p>
+
+                </div>
+              </div>
+
             </div>
+          </div>
 
-            <h1>
-              What are you building?
-            </h1>
+          <div class="composer-wrap">
 
-            <p>
-              Code. Debug. Explore. Ship.
-            </p>
+            <div class="composer">
 
-            <div class="suggestions">
+              <textarea
+                id="prompt"
+                rows="1"
+                placeholder="Ask anything..."
+                autocomplete="off"
+                spellcheck="true"
+              ></textarea>
 
-              <button
-                class="suggestion"
-                data-suggestion="Build a complete modern responsive website from scratch."
-                type="button"
-              >
-                <div class="suggestion-title">
-                  Build a website
+              <div class="composer-footer">
+
+                <div class="composer-hint">
+                  Enter to send · Shift + Enter for new line
                 </div>
 
-                <div class="suggestion-desc">
-                  Start a complete project from an idea.
-                </div>
-              </button>
+                <div class="composer-spacer"></div>
 
-              <button
-                class="suggestion"
-                data-suggestion="Analyze my project and find bugs, broken logic, and possible improvements."
-                type="button"
-              >
-                <div class="suggestion-title">
-                  Analyze project
-                </div>
+                <button
+                  class="send"
+                  id="send"
+                  aria-label="Send"
+                  title="Send"
+                >
+                  ↑
+                </button>
 
-                <div class="suggestion-desc">
-                  Find problems and improvements.
-                </div>
-              </button>
-
-              <button
-                class="suggestion"
-                data-suggestion="Create a clean professional UI for my application."
-                type="button"
-              >
-                <div class="suggestion-title">
-                  Design UI
-                </div>
-
-                <div class="suggestion-desc">
-                  Create a cleaner professional interface.
-                </div>
-              </button>
-
-              <button
-                class="suggestion"
-                data-suggestion="Explain how I should structure this application and its files."
-                type="button"
-              >
-                <div class="suggestion-title">
-                  Structure project
-                </div>
-
-                <div class="suggestion-desc">
-                  Plan architecture and files.
-                </div>
-              </button>
+              </div>
 
             </div>
 
           </div>
+
+        </div>
+
+        <!-- SETTINGS -->
+        <div class="view settings-view" id="view-settings">
+
+          <div class="settings">
+
+            <h2 class="settings-title">Settings</h2>
+
+            <p class="settings-subtitle">
+              Configure the AI provider used by OpenCodeLolo.10.
+            </p>
+
+            <div class="setting-group">
+              <label class="setting-label" for="provider">
+                Provider
+              </label>
+
+              <select class="setting-select" id="provider">
+                <option value="openai">OpenAI</option>
+                <option value="openrouter">OpenRouter</option>
+                <option value="gemini">Google Gemini</option>
+                <option value="groq">Groq</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="mistral">Mistral</option>
+                <option value="custom">Custom</option>
+              </select>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label" for="model">
+                Model
+              </label>
+
+              <input
+                class="setting-input"
+                id="model"
+                type="text"
+                placeholder="contoh: gpt-4.1-mini"
+                autocomplete="off"
+              />
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label" for="apiKey">
+                API Key
+              </label>
+
+              <input
+                class="setting-input"
+                id="apiKey"
+                type="password"
+                placeholder="Paste API key"
+                autocomplete="off"
+              />
+
+              <div class="setting-help">
+                Key disimpan lokal di browser dan dikirim hanya ketika
+                melakukan request chat.
+              </div>
+            </div>
+
+            <div class="setting-group">
+              <label class="setting-label" for="endpoint">
+                Endpoint
+              </label>
+
+              <input
+                class="setting-input"
+                id="endpoint"
+                type="text"
+                placeholder="Kosongkan untuk endpoint bawaan"
+                autocomplete="off"
+              />
+
+              <div class="setting-help">
+                Gunakan endpoint custom jika provider kamu
+                kompatibel dengan format Chat Completions.
+              </div>
+            </div>
+
+            <button
+              class="save-settings"
+              id="saveSettings"
+            >
+              Save Settings
+            </button>
+
+          </div>
+
+        </div>
+
+        <!-- FILES -->
+        <div class="view files-view" id="view-files">
+
+          <div class="files">
+
+            <h2 class="page-title">Files</h2>
+
+            <p class="page-description">
+              Project workspace
+            </p>
+
+            <div class="file-placeholder">
+              Workspace file manager
+            </div>
+
+          </div>
+
+        </div>
+
+        <!-- TERMINAL -->
+        <div class="view terminal-view" id="view-terminal">
+
+          <div
+            class="terminal"
+            id="terminalOutput"
+          >OpenCodeLolo.10 terminal
+$ ready
+</div>
 
         </div>
 
@@ -1013,263 +878,9 @@
 
     </main>
 
-    <!-- COMPOSER -->
-
-    <div class="composer-wrap">
-
-      <div class="composer">
-
-        <textarea
-          id="message-input"
-          placeholder="Ask OPENCODELO.10..."
-          rows="1"
-          autocomplete="off"
-        ></textarea>
-
-        <div class="composer-bottom">
-
-          <select
-            id="composer-model"
-            class="composer-select"
-          >
-            <option value="">
-              Current model
-            </option>
-          </select>
-
-          <div class="composer-spacer"></div>
-
-          <button
-            id="send-button"
-            class="send-button"
-            type="button"
-            title="Send"
-          >
-            ↑
-          </button>
-
-        </div>
-
-      </div>
-
-    </div>
-
   </div>
-
-  <!-- WORKSPACE -->
-
-  <section
-    id="workspace"
-    class="workspace"
-  >
-
-    <div class="workspace-header">
-
-      <span
-        id="workspace-title"
-        class="workspace-title"
-      >
-        Workspace
-      </span>
-
-      <button
-        id="workspace-close"
-        class="workspace-close"
-        type="button"
-      >
-        ×
-      </button>
-
-    </div>
-
-    <div
-      id="workspace-body"
-      class="workspace-body"
-    ></div>
-
-  </section>
-
-  <!-- SETTINGS -->
-
-  <div
-    id="settings-overlay"
-    class="overlay"
-  >
-
-    <div class="settings">
-
-      <div class="settings-head">
-
-        <div>
-          <div class="settings-head-title">
-            AI Settings
-          </div>
-
-          <div class="settings-head-sub">
-            OPENCODELO.10 provider configuration
-          </div>
-        </div>
-
-        <button
-          id="settings-close"
-          class="settings-close"
-          type="button"
-        >
-          ×
-        </button>
-
-      </div>
-
-      <div class="settings-body">
-
-        <div class="field-group">
-
-          <label class="field-label">
-            Provider
-          </label>
-
-          <select
-            id="provider-select"
-            class="field-select"
-          >
-            <option value="gemini">
-              Google Gemini
-            </option>
-
-            <option value="openai">
-              OpenAI
-            </option>
-
-            <option value="deepseek">
-              DeepSeek
-            </option>
-
-            <option value="openrouter">
-              OpenRouter
-            </option>
-          </select>
-
-        </div>
-
-        <div class="field-group">
-
-          <label class="field-label">
-            Model
-          </label>
-
-          <input
-            id="model-input"
-            class="field"
-            type="text"
-            placeholder="Masukkan nama model"
-            autocomplete="off"
-          >
-
-          <div class="hint">
-            Contoh: gemini-2.5-flash, gpt-5,
-            deepseek-chat, atau openrouter/free.
-          </div>
-
-        </div>
-
-        <div class="field-group">
-
-          <label class="field-label">
-            API Key
-          </label>
-
-          <div class="key-row">
-
-            <input
-              id="api-key-input"
-              class="field"
-              type="password"
-              placeholder="Tempel API key di sini"
-              autocomplete="off"
-            >
-
-            <button
-              id="show-key-button"
-              class="small-button"
-              type="button"
-            >
-              Show
-            </button>
-
-          </div>
-
-          <div class="hint">
-            Masukkan API key milikmu sendiri.
-            Jangan membagikan key kepada orang lain.
-          </div>
-
-        </div>
-
-        <div class="field-group">
-
-          <label class="field-label">
-            Endpoint
-          </label>
-
-          <input
-            id="endpoint-input"
-            class="field"
-            type="url"
-            placeholder="Default provider endpoint"
-            autocomplete="off"
-          >
-
-          <div class="hint">
-            Bisa dikosongkan jika backend menggunakan
-            endpoint default.
-          </div>
-
-        </div>
-
-        <div class="settings-actions">
-
-          <button
-            id="test-connection"
-            class="test-button"
-            type="button"
-          >
-            Test Connection
-          </button>
-
-          <button
-            id="save-settings"
-            class="save-button"
-            type="button"
-          >
-            Save Settings
-          </button>
-
-        </div>
-
-        <div
-          id="settings-status"
-          class="settings-status"
-        >
-          Belum dikonfigurasi.
-        </div>
-
-      </div>
-
-    </div>
-
-  </div>
-
-  <!-- HIDDEN FILE INPUT -->
-
-  <input
-    id="file-input"
-    type="file"
-    multiple
-    hidden
-  >
 
   <script src="./app.js"></script>
-
 </body>
 </html>
 ```
