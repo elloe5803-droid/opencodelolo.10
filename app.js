@@ -3,55 +3,109 @@
 
 /*
  * OPENCODELO.10
- * app.js
+ *
+ * Frontend:
+ * index.html -> app.js -> /api/chat
  *
  * Settings:
- * - Provider
- * - Model
- * - API Key
- * - Endpoint
+ * provider
+ * model
+ * apiKey
+ * endpoint
  *
- * Frontend -> /api/chat
- *
- * Request:
- * {
- *   message,
- *   provider,
- *   model,
- *   apiKey,
- *   endpoint,
- *   files
- * }
+ * API key berasal dari Settings.
+ * Tidak ditanam langsung di source code.
  */
 
 const OpenCodeLolo = (() => {
 
-  const SETTINGS_KEY = "opencodelo.settings";
-  const HISTORY_KEY = "opencodelo.history";
+  const SETTINGS_KEY =
+    "opencodelo.settings.v2";
+
+  const HISTORY_KEY =
+    "opencodelo.history.v2";
 
   const state = {
+
     busy: false,
+
     messages: [],
+
     files: [],
+
     currentView: "chat",
 
     settings: {
+
       provider: "gemini",
+
       model: "gemini-2.5-flash",
+
       apiKey: "",
+
       endpoint: ""
+
     }
+
   };
 
-  /* =========================
-     DOM
-  ========================= */
+  const PROVIDERS = {
+
+    gemini: {
+
+      name: "Google Gemini",
+
+      model:
+        "gemini-2.5-flash",
+
+      endpoint:
+        "https://generativelanguage.googleapis.com/v1beta"
+
+    },
+
+    openai: {
+
+      name: "OpenAI",
+
+      model:
+        "gpt-5",
+
+      endpoint:
+        "https://api.openai.com/v1/chat/completions"
+
+    },
+
+    deepseek: {
+
+      name: "DeepSeek",
+
+      model:
+        "deepseek-chat",
+
+      endpoint:
+        "https://api.deepseek.com/chat/completions"
+
+    },
+
+    openrouter: {
+
+      name: "OpenRouter",
+
+      model:
+        "openrouter/free",
+
+      endpoint:
+        "https://openrouter.ai/api/v1/chat/completions"
+
+    }
+
+  };
 
   const $ = selector =>
     document.querySelector(selector);
 
   /* =========================
-     SETTINGS
+     STORAGE
   ========================= */
 
   function loadSettings() {
@@ -71,8 +125,11 @@ const OpenCodeLolo = (() => {
       ) {
 
         state.settings = {
+
           ...state.settings,
+
           ...saved
+
         };
 
       }
@@ -80,139 +137,137 @@ const OpenCodeLolo = (() => {
     } catch (error) {
 
       console.warn(
-        "Settings load failed:",
+        "Settings load error:",
         error
       );
 
     }
 
-    return state.settings;
   }
 
   function saveSettings(settings) {
 
     state.settings = {
+
       ...state.settings,
+
       ...settings
+
     };
 
     try {
 
       localStorage.setItem(
+
         SETTINGS_KEY,
+
         JSON.stringify(
           state.settings
         )
+
       );
 
     } catch (error) {
 
       console.warn(
-        "Settings save failed:",
+        "Settings save error:",
         error
       );
 
     }
 
-    updateProviderUI();
+    updateStatus();
+
   }
 
-  function getSettings() {
+  function loadHistory() {
 
-    loadSettings();
+    try {
 
-    return {
-      provider:
-        state.settings.provider ||
-        "gemini",
+      const history =
+        JSON.parse(
+          localStorage.getItem(
+            HISTORY_KEY
+          ) || "[]"
+        );
 
-      model:
-        state.settings.model ||
-        "gemini-2.5-flash",
+      if (
+        Array.isArray(history)
+      ) {
 
-      apiKey:
-        state.settings.apiKey ||
-        "",
+        state.messages =
+          history;
 
-      endpoint:
-        state.settings.endpoint ||
-        ""
-    };
+      }
+
+    } catch (error) {
+
+      console.warn(
+        "History load error:",
+        error
+      );
+
+    }
+
+  }
+
+  function saveHistory() {
+
+    try {
+
+      localStorage.setItem(
+
+        HISTORY_KEY,
+
+        JSON.stringify(
+          state.messages.slice(-100)
+        )
+
+      );
+
+    } catch (error) {
+
+      console.warn(
+        "History save error:",
+        error
+      );
+
+    }
+
   }
 
   /* =========================
-     PROVIDERS
+     SETTINGS
   ========================= */
 
-  const PROVIDERS = {
+  function openSettings() {
 
-    gemini: {
-      name: "Google Gemini",
-      defaultModel:
-        "gemini-2.5-flash",
-      endpoint:
-        "https://generativelanguage.googleapis.com/v1beta/models"
-    },
+    fillSettingsForm();
 
-    openai: {
-      name: "OpenAI",
-      defaultModel:
-        "gpt-5",
-      endpoint:
-        "https://api.openai.com/v1/chat/completions"
-    },
+    $("#settings-overlay")
+      ?.classList.add("open");
 
-    deepseek: {
-      name: "DeepSeek",
-      defaultModel:
-        "deepseek-chat",
-      endpoint:
-        "https://api.deepseek.com/chat/completions"
-    },
-
-    openrouter: {
-      name: "OpenRouter",
-      defaultModel:
-        "openrouter/free",
-      endpoint:
-        "https://openrouter.ai/api/v1/chat/completions"
-    }
-
-  };
-
-  function getProvider() {
-
-    const settings =
-      getSettings();
-
-    return (
-      PROVIDERS[
-        settings.provider
-      ]
-      ? settings.provider
-      : "gemini"
-    );
   }
 
-  function getProviderInfo() {
+  function closeSettings() {
 
-    return PROVIDERS[
-      getProvider()
-    ];
+    $("#settings-overlay")
+      ?.classList.remove("open");
+
   }
 
-  function updateProviderUI() {
+  function fillSettingsForm() {
 
     const settings =
-      getSettings();
+      state.settings;
 
     const provider =
       $("#provider-select");
 
     const model =
-      $("#model-select");
+      $("#model-input");
 
-    const apiKey =
+    const key =
       $("#api-key-input");
 
     const endpoint =
@@ -226,461 +281,21 @@ const OpenCodeLolo = (() => {
       model.value =
         settings.model;
 
-    if (apiKey)
-      apiKey.value =
+    if (key)
+      key.value =
         settings.apiKey;
 
     if (endpoint)
       endpoint.value =
         settings.endpoint;
 
-    const name =
-      $("#provider-name");
-
-    if (name) {
-
-      name.textContent =
-        getProviderInfo()?.name ||
-        settings.provider;
-    }
-
   }
 
-  /* =========================
-     SETTINGS UI
-  ========================= */
-
-  function openSettings() {
-
-    const settings =
-      getSettings();
-
-    const overlay =
-      $("#settings-overlay");
-
-    if (!overlay) {
-
-      createSettingsOverlay();
-
-    }
-
-    $("#settings-overlay")
-      ?.classList.add("open");
-
-    updateProviderUI();
-  }
-
-  function createSettingsOverlay() {
-
-    const overlay =
-      document.createElement("div");
-
-    overlay.id =
-      "settings-overlay";
-
-    overlay.className =
-      "overlay";
-
-    overlay.innerHTML = `
-
-      <div class="settings-panel">
-
-        <div class="settings-header">
-
-          <div>
-
-            <div class="settings-title">
-              Settings
-            </div>
-
-            <div class="settings-subtitle">
-              OPENCODELO.10 AI Configuration
-            </div>
-
-          </div>
-
-          <button
-            id="settings-close"
-            class="icon-button"
-            type="button"
-          >
-            ×
-          </button>
-
-        </div>
-
-        <div class="settings-body">
-
-          <div class="setting-group">
-
-            <label>
-              Provider
-            </label>
-
-            <select
-              id="provider-select"
-              class="field"
-            >
-
-              <option value="gemini">
-                Google Gemini
-              </option>
-
-              <option value="openai">
-                OpenAI
-              </option>
-
-              <option value="deepseek">
-                DeepSeek
-              </option>
-
-              <option value="openrouter">
-                OpenRouter
-              </option>
-
-            </select>
-
-          </div>
-
-          <div class="setting-group">
-
-            <label>
-              Model
-            </label>
-
-            <input
-              id="model-select"
-              class="field"
-              type="text"
-              placeholder="gemini-2.5-flash"
-              autocomplete="off"
-            >
-
-            <div class="setting-hint">
-              Isi nama model sesuai provider.
-            </div>
-
-          </div>
-
-          <div class="setting-group">
-
-            <label>
-              API Key
-            </label>
-
-            <div class="secret-field">
-
-              <input
-                id="api-key-input"
-                class="field"
-                type="password"
-                placeholder="Masukkan API key..."
-                autocomplete="off"
-              >
-
-              <button
-                id="toggle-api-key"
-                class="button"
-                type="button"
-              >
-                Show
-              </button>
-
-            </div>
-
-            <div class="setting-hint">
-              Key disimpan secara lokal di browser.
-            </div>
-
-          </div>
-
-          <div class="setting-group">
-
-            <label>
-              Endpoint
-            </label>
-
-            <input
-              id="endpoint-input"
-              class="field"
-              type="url"
-              placeholder="Default endpoint provider"
-              autocomplete="off"
-            >
-
-            <div class="setting-hint">
-              Kosongkan jika backend menggunakan
-              endpoint default.
-            </div>
-
-          </div>
-
-          <div class="settings-actions">
-
-            <button
-              id="settings-test"
-              class="button"
-              type="button"
-            >
-              Test Connection
-            </button>
-
-            <button
-              id="settings-save"
-              class="button primary"
-              type="button"
-            >
-              Save Settings
-            </button>
-
-          </div>
-
-          <div
-            id="settings-status"
-            class="settings-status"
-          >
-            Ready
-          </div>
-
-        </div>
-
-      </div>
-    `;
-
-    document.body.appendChild(
-      overlay
-    );
-
-    injectSettingsCSS();
-
-    $("#settings-close")
-      ?.addEventListener(
-        "click",
-        closeSettings
-      );
-
-    overlay.addEventListener(
-      "click",
-      event => {
-
-        if (
-          event.target === overlay
-        ) {
-
-          closeSettings();
-
-        }
-
-      }
-    );
-
-    $("#provider-select")
-      ?.addEventListener(
-        "change",
-        onProviderChange
-      );
-
-    $("#toggle-api-key")
-      ?.addEventListener(
-        "click",
-        toggleApiKey
-      );
-
-    $("#settings-save")
-      ?.addEventListener(
-        "click",
-        saveSettingsFromUI
-      );
-
-    $("#settings-test")
-      ?.addEventListener(
-        "click",
-        testConnection
-      );
-
-  }
-
-  function injectSettingsCSS() {
-
-    if (
-      document.getElementById(
-        "opencodelo-settings-css"
-      )
-    )
-      return;
-
-    const style =
-      document.createElement("style");
-
-    style.id =
-      "opencodelo-settings-css";
-
-    style.textContent = `
-
-      #settings-overlay {
-        position:fixed;
-        inset:0;
-        z-index:9999;
-        display:none;
-        align-items:center;
-        justify-content:center;
-        background:rgba(0,0,0,.72);
-        backdrop-filter:blur(8px);
-      }
-
-      #settings-overlay.open {
-        display:flex;
-      }
-
-      .settings-panel {
-        width:min(520px, calc(100vw - 30px));
-        max-height:calc(100vh - 30px);
-        overflow:auto;
-        background:#0d0d0d;
-        border:1px solid #262626;
-        border-radius:10px;
-        box-shadow:0 25px 80px rgba(0,0,0,.65);
-        color:#ddd;
-      }
-
-      .settings-header {
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        padding:18px;
-        border-bottom:1px solid #202020;
-      }
-
-      .settings-title {
-        font-size:15px;
-        font-weight:600;
-      }
-
-      .settings-subtitle {
-        margin-top:4px;
-        color:#666;
-        font-size:10px;
-      }
-
-      .settings-body {
-        padding:18px;
-      }
-
-      .setting-group {
-        margin-bottom:18px;
-      }
-
-      .setting-group label {
-        display:block;
-        margin-bottom:7px;
-        color:#aaa;
-        font-size:10px;
-      }
-
-      .field {
-        width:100%;
-        min-height:36px;
-        box-sizing:border-box;
-        padding:0 10px;
-        border:1px solid #292929;
-        border-radius:5px;
-        outline:none;
-        background:#090909;
-        color:#ddd;
-        font-size:11px;
-      }
-
-      .field:focus {
-        border-color:#444;
-      }
-
-      .secret-field {
-        display:flex;
-        gap:7px;
-      }
-
-      .secret-field .field {
-        flex:1;
-      }
-
-      .button {
-        min-height:34px;
-        padding:0 12px;
-        border:1px solid #292929;
-        border-radius:5px;
-        background:#111;
-        color:#aaa;
-        cursor:pointer;
-        font-size:10px;
-      }
-
-      .button:hover {
-        background:#181818;
-        color:#ddd;
-      }
-
-      .button.primary {
-        border-color:#ddd;
-        background:#ddd;
-        color:#080808;
-      }
-
-      .button.primary:hover {
-        background:#fff;
-      }
-
-      .icon-button {
-        width:30px;
-        height:30px;
-        border:0;
-        background:transparent;
-        color:#666;
-        cursor:pointer;
-        font-size:20px;
-      }
-
-      .settings-actions {
-        display:flex;
-        justify-content:flex-end;
-        gap:8px;
-        margin-top:22px;
-      }
-
-      .settings-status {
-        margin-top:12px;
-        padding:9px;
-        border:1px solid #1c1c1c;
-        border-radius:5px;
-        color:#666;
-        font-size:10px;
-      }
-
-      .setting-hint {
-        margin-top:6px;
-        color:#4e4e4e;
-        font-size:9px;
-        line-height:1.5;
-      }
-
-    `;
-
-    document.head.appendChild(
-      style
-    );
-
-  }
-
-  function closeSettings() {
-
-    $("#settings-overlay")
-      ?.classList.remove("open");
-
-  }
-
-  function onProviderChange(event) {
+  function providerChanged() {
 
     const provider =
-      event.target.value;
+      $("#provider-select")
+        ?.value;
 
     const info =
       PROVIDERS[provider];
@@ -689,58 +304,99 @@ const OpenCodeLolo = (() => {
       return;
 
     const model =
-      $("#model-select");
+      $("#model-input");
 
     const endpoint =
       $("#endpoint-input");
 
-    if (
-      model &&
-      (
-        !model.value.trim() ||
-        Object.values(
-          PROVIDERS
-        ).some(
-          p =>
-            p.defaultModel ===
-            model.value.trim()
-        )
-      )
-    ) {
+    if (model) {
 
       model.value =
-        info.defaultModel;
+        info.model;
 
     }
 
-    if (
-      endpoint &&
-      !endpoint.value.trim()
-    ) {
+    if (endpoint) {
 
       endpoint.value =
         info.endpoint;
 
     }
 
+    setSettingsStatus(
+      `${info.name} dipilih.`
+    );
+
   }
 
-  function toggleApiKey() {
+  function saveSettingsFromUI() {
+
+    const provider =
+      $("#provider-select")
+        ?.value ||
+      "gemini";
+
+    const model =
+      $("#model-input")
+        ?.value
+        .trim() ||
+      PROVIDERS[provider]?.model ||
+      "";
+
+    const apiKey =
+      $("#api-key-input")
+        ?.value
+        .trim() ||
+      "";
+
+    const endpoint =
+      $("#endpoint-input")
+        ?.value
+        .trim() ||
+      "";
+
+    saveSettings({
+
+      provider,
+
+      model,
+
+      apiKey,
+
+      endpoint
+
+    });
+
+    updateComposerModel();
+
+    setSettingsStatus(
+      "Settings berhasil disimpan."
+    );
+
+    toast(
+      "AI settings saved"
+    );
+
+  }
+
+  function toggleKey() {
 
     const input =
       $("#api-key-input");
 
     const button =
-      $("#toggle-api-key");
+      $("#show-key-button");
 
     if (!input)
       return;
 
     if (
-      input.type === "password"
+      input.type ===
+      "password"
     ) {
 
-      input.type = "text";
+      input.type =
+        "text";
 
       if (button)
         button.textContent =
@@ -748,51 +404,14 @@ const OpenCodeLolo = (() => {
 
     } else {
 
-      input.type = "password";
+      input.type =
+        "password";
 
       if (button)
         button.textContent =
           "Show";
 
     }
-
-  }
-
-  function saveSettingsFromUI() {
-
-    const provider =
-      $("#provider-select")?.value ||
-      "gemini";
-
-    const model =
-      $("#model-select")?.value.trim() ||
-      PROVIDERS[
-        provider
-      ]?.defaultModel ||
-      "";
-
-    const apiKey =
-      $("#api-key-input")?.value.trim() ||
-      "";
-
-    const endpoint =
-      $("#endpoint-input")?.value.trim() ||
-      "";
-
-    saveSettings({
-      provider,
-      model,
-      apiKey,
-      endpoint
-    });
-
-    setSettingsStatus(
-      "Settings saved."
-    );
-
-    toast(
-      "AI settings saved"
-    );
 
   }
 
@@ -812,8 +431,65 @@ const OpenCodeLolo = (() => {
 
     element.style.color =
       error
-        ? "#d66"
-        : "#777";
+        ? "#b66"
+        : "#666";
+
+  }
+
+  /* =========================
+     STATUS
+  ========================= */
+
+  function updateStatus(
+    connected = false
+  ) {
+
+    const settings =
+      state.settings;
+
+    const provider =
+      PROVIDERS[
+        settings.provider
+      ];
+
+    const dot =
+      $("#connection-dot");
+
+    const text =
+      $("#connection-text");
+
+    const modelStatus =
+      $("#model-status");
+
+    if (dot) {
+
+      dot.classList.toggle(
+        "online",
+        connected ||
+        Boolean(
+          settings.apiKey
+        )
+      );
+
+    }
+
+    if (text) {
+
+      text.textContent =
+        settings.apiKey
+          ? `${provider?.name || settings.provider} configured`
+          : "Configure AI";
+
+    }
+
+    if (modelStatus) {
+
+      modelStatus.textContent =
+        settings.apiKey
+          ? `${settings.provider} · ${settings.model}`
+          : "Configure AI";
+
+    }
 
   }
 
@@ -829,62 +505,89 @@ const OpenCodeLolo = (() => {
     if (!input)
       return;
 
+    const message =
+      input.value.trim();
+
+    if (!message) {
+
+      toast(
+        "Tulis pesan terlebih dahulu."
+      );
+
+      return;
+
+    }
+
+    input.value = "";
+
+    input.style.height =
+      "auto";
+
     await sendMessage(
-      input.value
+      message
     );
 
   }
 
-  async function sendMessage(message) {
+  async function sendMessage(
+    message
+  ) {
 
     if (state.busy)
       return;
 
     message =
-      String(message || "")
-        .trim();
+      String(
+        message || ""
+      ).trim();
 
-    if (!message) {
+    if (!message)
+      return;
 
-      toast(
-        "Pesan masih kosong."
+    /*
+     * Kalau belum punya API key,
+     * arahkan ke Settings.
+     */
+
+    if (
+      !state.settings.apiKey
+    ) {
+
+      addMessage(
+        "assistant",
+        "⚠️ API key belum dikonfigurasi. Buka Settings → pilih provider → tempel API key → Save Settings."
       );
 
-      return;
-    }
+      openSettings();
 
-    const settings =
-      getSettings();
+      return;
+
+    }
 
     addMessage(
       "user",
       message
     );
 
-    const input =
-      $("#message-input");
-
-    if (input) {
-
-      input.value = "";
-
-      input.style.height =
-        "auto";
-    }
-
     setBusy(true);
 
     try {
+
+      const settings =
+        state.settings;
 
       const response =
         await fetch(
           "/api/chat",
           {
+
             method: "POST",
 
             headers: {
+
               "Content-Type":
                 "application/json"
+
             },
 
             body:
@@ -907,18 +610,24 @@ const OpenCodeLolo = (() => {
                 files:
                   state.files.map(
                     file => ({
+
                       name:
                         file.name,
+
                       type:
                         file.type,
+
                       size:
                         file.size,
+
                       content:
                         file.content || ""
+
                     })
                   )
 
               })
+
           }
         );
 
@@ -932,7 +641,7 @@ const OpenCodeLolo = (() => {
       } catch {
 
         throw new Error(
-          `Server mengembalikan response tidak valid (${response.status}).`
+          `Response server tidak valid (${response.status}).`
         );
 
       }
@@ -940,9 +649,11 @@ const OpenCodeLolo = (() => {
       if (!response.ok) {
 
         throw new Error(
+
           data?.error ||
           data?.message ||
-          `HTTP ${response.status}`
+          `Request gagal (${response.status})`
+
         );
 
       }
@@ -955,12 +666,13 @@ const OpenCodeLolo = (() => {
           ?.content;
 
       if (
-        typeof reply !== "string" ||
+        typeof reply !==
+        "string" ||
         !reply.trim()
       ) {
 
         throw new Error(
-          "Backend tidak mengembalikan jawaban AI."
+          "Backend tidak memberikan jawaban AI."
         );
 
       }
@@ -970,10 +682,12 @@ const OpenCodeLolo = (() => {
         reply
       );
 
+      updateStatus(true);
+
     } catch (error) {
 
       console.error(
-        "AI error:",
+        "CHAT ERROR:",
         error
       );
 
@@ -994,25 +708,256 @@ const OpenCodeLolo = (() => {
 
   }
 
+  function addMessage(
+    role,
+    content
+  ) {
+
+    state.messages.push({
+
+      role,
+
+      content,
+
+      time:
+        Date.now()
+
+    });
+
+    saveHistory();
+
+    renderMessages();
+
+  }
+
+  function renderMessages() {
+
+    const container =
+      $("#messages");
+
+    if (!container)
+      return;
+
+    if (
+      state.messages.length === 0
+    ) {
+
+      container.innerHTML =
+        getWelcomeHTML();
+
+      bindSuggestions();
+
+      return;
+
+    }
+
+    container.innerHTML = "";
+
+    for (
+      const message
+      of state.messages
+    ) {
+
+      const element =
+        document.createElement(
+          "div"
+        );
+
+      element.className =
+        `message ${message.role}`;
+
+      const roleName =
+        message.role ===
+        "user"
+          ? "You"
+          : "OPENCODELO.10";
+
+      element.innerHTML = `
+
+        <div class="message-role">
+          ${escapeHTML(roleName)}
+        </div>
+
+        <div class="message-content">
+          ${escapeHTML(message.content)}
+        </div>
+
+      `;
+
+      container.appendChild(
+        element
+      );
+
+    }
+
+    requestAnimationFrame(
+      () => {
+
+        container.scrollTop =
+          container.scrollHeight;
+
+      }
+    );
+
+  }
+
+  function getWelcomeHTML() {
+
+    return `
+
+      <div class="welcome">
+
+        <div class="welcome-mark">
+          O10
+        </div>
+
+        <h1>
+          What are you building?
+        </h1>
+
+        <p>
+          Code. Debug. Explore. Ship.
+        </p>
+
+        <div class="suggestions">
+
+          <button
+            class="suggestion"
+            data-suggestion="Build a complete modern responsive website from scratch."
+            type="button"
+          >
+
+            <div class="suggestion-title">
+              Build a website
+            </div>
+
+            <div class="suggestion-desc">
+              Start a complete project from an idea.
+            </div>
+
+          </button>
+
+          <button
+            class="suggestion"
+            data-suggestion="Analyze my project and find bugs, broken logic, and possible improvements."
+            type="button"
+          >
+
+            <div class="suggestion-title">
+              Analyze project
+            </div>
+
+            <div class="suggestion-desc">
+              Find problems and improvements.
+            </div>
+
+          </button>
+
+          <button
+            class="suggestion"
+            data-suggestion="Create a clean professional UI for my application."
+            type="button"
+          >
+
+            <div class="suggestion-title">
+              Design UI
+            </div>
+
+            <div class="suggestion-desc">
+              Create a cleaner professional interface.
+            </div>
+
+          </button>
+
+          <button
+            class="suggestion"
+            data-suggestion="Explain how I should structure this application and its files."
+            type="button"
+          >
+
+            <div class="suggestion-title">
+              Structure project
+            </div>
+
+            <div class="suggestion-desc">
+              Plan architecture and files.
+            </div>
+
+          </button>
+
+        </div>
+
+      </div>
+
+    `;
+
+  }
+
+  function bindSuggestions() {
+
+    document
+      .querySelectorAll(
+        "[data-suggestion]"
+      )
+      .forEach(
+        button => {
+
+          button.addEventListener(
+            "click",
+            () => {
+
+              const input =
+                $("#message-input");
+
+              if (!input)
+                return;
+
+              input.value =
+                button.dataset
+                  .suggestion;
+
+              input.focus();
+
+              input.dispatchEvent(
+                new Event(
+                  "input"
+                )
+              );
+
+            }
+          );
+
+        }
+      );
+
+  }
+
   /* =========================
-     TEST CONNECTION
+     CONNECTION
   ========================= */
 
   async function testConnection() {
 
-    /*
-     * Simpan konfigurasi terbaru
-     * terlebih dahulu supaya test
-     * menggunakan nilai di Settings.
-     */
-
     saveSettingsFromUI();
 
     const settings =
-      getSettings();
+      state.settings;
+
+    if (
+      !settings.apiKey
+    ) {
+
+      setSettingsStatus(
+        "API key belum diisi.",
+        true
+      );
+
+      return;
+
+    }
 
     setSettingsStatus(
-      "Testing connection..."
+      "Menghubungkan ke AI..."
     );
 
     try {
@@ -1021,18 +966,21 @@ const OpenCodeLolo = (() => {
         await fetch(
           "/api/chat",
           {
+
             method: "POST",
 
             headers: {
+
               "Content-Type":
                 "application/json"
+
             },
 
             body:
               JSON.stringify({
 
                 message:
-                  "Reply with exactly: CONNECTION_OK",
+                  "Reply with exactly CONNECTION_OK",
 
                 provider:
                   settings.provider,
@@ -1047,6 +995,7 @@ const OpenCodeLolo = (() => {
                   settings.endpoint
 
               })
+
           }
         );
 
@@ -1060,7 +1009,7 @@ const OpenCodeLolo = (() => {
       } catch {
 
         throw new Error(
-          `Invalid server response (${response.status})`
+          `Server response invalid (${response.status})`
         );
 
       }
@@ -1074,17 +1023,21 @@ const OpenCodeLolo = (() => {
 
       }
 
-      if (!data?.reply) {
+      if (
+        !data?.reply
+      ) {
 
         throw new Error(
-          "AI tidak mengembalikan response."
+          "Tidak ada jawaban dari provider."
         );
 
       }
 
       setSettingsStatus(
-        `${settings.provider} connection OK`
+        "✓ Connection berhasil."
       );
+
+      updateStatus(true);
 
       toast(
         "AI connection OK"
@@ -1092,103 +1045,133 @@ const OpenCodeLolo = (() => {
 
     } catch (error) {
 
+      console.error(
+        "CONNECTION ERROR:",
+        error
+      );
+
       setSettingsStatus(
-        `Connection failed: ${error.message}`,
+        `✕ ${error.message}`,
         true
       );
 
-      toast(
-        `Connection failed`
-      );
+      updateStatus(false);
 
     }
 
   }
 
   /* =========================
-     MESSAGES
+     FILES
   ========================= */
 
-  function addMessage(
-    role,
-    content
+  function openUpload() {
+
+    $("#file-input")
+      ?.click();
+
+  }
+
+  function handleFiles(
+    fileList
   ) {
 
-    state.messages.push({
-      role,
-      content,
-      time: Date.now()
-    });
+    const files =
+      Array.from(
+        fileList || []
+      );
 
-    saveHistory();
-
-    /*
-     * Jika index.html mempunyai
-     * fungsi UI sendiri.
-     */
-
-    if (
-      window.LoloUI &&
-      typeof window.LoloUI.addMessage ===
-        "function"
+    for (
+      const file
+      of files
     ) {
 
-      window.LoloUI.addMessage(
-        role,
-        content
-      );
+      const isText =
+        file.type.startsWith(
+          "text/"
+        ) ||
+        /\.(html?|css|js|jsx|ts|tsx|json|md|txt|py|java|php|go|rs|c|cpp|h|sql|xml|yaml|yml)$/i
+          .test(
+            file.name
+          );
 
-    }
+      if (!isText) {
 
-  }
+        state.files.push({
 
-  function saveHistory() {
+          name:
+            file.name,
 
-    try {
+          type:
+            file.type,
 
-      localStorage.setItem(
-        HISTORY_KEY,
-        JSON.stringify(
-          state.messages.slice(-100)
-        )
-      );
+          size:
+            file.size,
 
-    } catch (error) {
+          content:
+            ""
 
-      console.warn(
-        "History save failed:",
-        error
-      );
+        });
 
-    }
-
-  }
-
-  function loadHistory() {
-
-    try {
-
-      const data =
-        JSON.parse(
-          localStorage.getItem(
-            HISTORY_KEY
-          ) || "[]"
+        toast(
+          `${file.name} ditambahkan`
         );
 
-      if (
-        Array.isArray(data)
-      ) {
-
-        state.messages =
-          data;
+        continue;
 
       }
 
-    } catch (error) {
+      const reader =
+        new FileReader();
 
-      console.warn(
-        "History load failed:",
-        error
+      reader.onload = () => {
+
+        state.files.push({
+
+          name:
+            file.name,
+
+          type:
+            file.type,
+
+          size:
+            file.size,
+
+          content:
+            String(
+              reader.result || ""
+            )
+
+        });
+
+        toast(
+          `${file.name} ditambahkan`
+        );
+
+      };
+
+      reader.onerror = () => {
+
+        state.files.push({
+
+          name:
+            file.name,
+
+          type:
+            file.type,
+
+          size:
+            file.size,
+
+          content:
+            ""
+
+        });
+
+      };
+
+      reader.readAsText(
+        file
       );
 
     }
@@ -1196,10 +1179,844 @@ const OpenCodeLolo = (() => {
   }
 
   /* =========================
-     UI
+     WORKSPACE
   ========================= */
 
-  function setBusy(value) {
+  function openView(
+    view
+  ) {
+
+    state.currentView =
+      view;
+
+    document
+      .querySelectorAll(
+        "[data-view]"
+      )
+      .forEach(
+        button => {
+
+          button.classList.toggle(
+            "active",
+            button.dataset.view ===
+              view
+          );
+
+        }
+      );
+
+    if (
+      view === "chat"
+    ) {
+
+      closeWorkspace();
+
+      $("#top-title")
+        .textContent =
+        "Chat";
+
+      return;
+
+    }
+
+    openWorkspace(
+      view
+    );
+
+  }
+
+  function openWorkspace(
+    view
+  ) {
+
+    const workspace =
+      $("#workspace");
+
+    const title =
+      $("#workspace-title");
+
+    const body =
+      $("#workspace-body");
+
+    if (
+      !workspace ||
+      !title ||
+      !body
+    )
+      return;
+
+    const names = {
+
+      files:
+        "Files",
+
+      editor:
+        "Editor",
+
+      terminal:
+        "Terminal",
+
+      git:
+        "Git",
+
+      search:
+        "Search",
+
+      history:
+        "History"
+
+    };
+
+    title.textContent =
+      names[view] ||
+      "Workspace";
+
+    body.innerHTML = "";
+
+    if (
+      view === "files"
+    ) {
+
+      renderFiles(
+        body
+      );
+
+    } else if (
+      view === "editor"
+    ) {
+
+      renderEditor(
+        body
+      );
+
+    } else if (
+      view === "terminal"
+    ) {
+
+      renderTerminal(
+        body
+      );
+
+    } else if (
+      view === "git"
+    ) {
+
+      renderGit(
+        body
+      );
+
+    } else if (
+      view === "search"
+    ) {
+
+      renderSearch(
+        body
+      );
+
+    } else if (
+      view === "history"
+    ) {
+
+      renderHistory(
+        body
+      );
+
+    }
+
+    workspace.classList.add(
+      "open"
+    );
+
+  }
+
+  function closeWorkspace() {
+
+    $("#workspace")
+      ?.classList.remove(
+        "open"
+      );
+
+  }
+
+  /* =========================
+     FILE VIEW
+  ========================= */
+
+  function renderFiles(
+    body
+  ) {
+
+    if (
+      state.files.length === 0
+    ) {
+
+      body.innerHTML = `
+
+        <div style="
+          max-width:600px;
+          margin:60px auto;
+          text-align:center;
+          color:#555;
+          font-size:10px;
+        ">
+
+          <div style="
+            font-size:25px;
+            margin-bottom:12px;
+          ">
+            ▤
+          </div>
+
+          No files uploaded.
+
+          <br><br>
+
+          <button
+            id="workspace-upload"
+            class="small-button"
+          >
+            Upload Files
+          </button>
+
+        </div>
+
+      `;
+
+    } else {
+
+      body.innerHTML = `
+
+        <div style="
+          display:flex;
+          justify-content:space-between;
+          align-items:center;
+          margin-bottom:14px;
+        ">
+
+          <span style="
+            color:#555;
+            font-size:9px;
+          ">
+            ${state.files.length} file(s)
+          </span>
+
+          <button
+            id="workspace-upload"
+            class="small-button"
+          >
+            Upload
+          </button>
+
+        </div>
+
+        <div id="file-list"></div>
+
+      `;
+
+      const list =
+        $("#file-list");
+
+      state.files.forEach(
+        (file, index) => {
+
+          const row =
+            document.createElement(
+              "div"
+            );
+
+          row.style.cssText = `
+
+            display:flex;
+            align-items:center;
+            gap:10px;
+            padding:11px;
+            border:1px solid #171717;
+            border-radius:5px;
+            margin-bottom:5px;
+            background:#0b0b0b;
+
+          `;
+
+          row.innerHTML = `
+
+            <span style="
+              color:#555;
+            ">
+              ▤
+            </span>
+
+            <span style="
+              flex:1;
+              color:#aaa;
+              font-size:10px;
+            ">
+              ${escapeHTML(
+                file.name
+              )}
+            </span>
+
+            <span style="
+              color:#444;
+              font-size:8px;
+            ">
+              ${formatBytes(
+                file.size
+              )}
+            </span>
+
+            <button
+              class="small-button"
+              data-remove="${index}"
+            >
+              Remove
+            </button>
+
+          `;
+
+          list.appendChild(
+            row
+          );
+
+        }
+      );
+
+      list
+        .querySelectorAll(
+          "[data-remove]"
+        )
+        .forEach(
+          button => {
+
+            button.addEventListener(
+              "click",
+              () => {
+
+                state.files.splice(
+                  Number(
+                    button.dataset.remove
+                  ),
+                  1
+                );
+
+                renderFiles(
+                  body
+                );
+
+              }
+            );
+
+          }
+        );
+
+    }
+
+    body
+      .querySelector(
+        "#workspace-upload"
+      )
+      ?.addEventListener(
+        "click",
+        openUpload
+      );
+
+  }
+
+  /* =========================
+     EDITOR
+  ========================= */
+
+  function renderEditor(
+    body
+  ) {
+
+    body.innerHTML = `
+
+      <div style="
+        max-width:850px;
+        margin:auto;
+      ">
+
+        <div style="
+          margin-bottom:12px;
+          color:#555;
+          font-size:9px;
+        ">
+          Editor
+        </div>
+
+        <textarea
+          id="code-editor"
+          style="
+            width:100%;
+            height:500px;
+            resize:vertical;
+            padding:14px;
+            border:1px solid #222;
+            border-radius:6px;
+            outline:0;
+            background:#080808;
+            color:#aaa;
+            font:11px/1.7 monospace;
+          "
+          placeholder="// Open a file from your workspace..."
+        ></textarea>
+
+      </div>
+
+    `;
+
+  }
+
+  /* =========================
+     TERMINAL
+  ========================= */
+
+  function renderTerminal(
+    body
+  ) {
+
+    body.innerHTML = `
+
+      <div style="
+        max-width:900px;
+        margin:auto;
+      ">
+
+        <div style="
+          margin-bottom:10px;
+          color:#555;
+          font-size:9px;
+        ">
+          Terminal
+        </div>
+
+        <div style="
+          border:1px solid #202020;
+          border-radius:6px;
+          overflow:hidden;
+          background:#060606;
+        ">
+
+          <pre
+            id="terminal-output"
+            style="
+              height:350px;
+              overflow:auto;
+              margin:0;
+              padding:14px;
+              color:#777;
+              font:10px/1.6 monospace;
+              white-space:pre-wrap;
+            "
+          >OPENCODELO terminal
+
+Backend terminal belum dikonfigurasi.
+</pre>
+
+          <div style="
+            display:flex;
+            border-top:1px solid #181818;
+          ">
+
+            <span style="
+              padding:10px;
+              color:#555;
+              font:10px monospace;
+            ">
+              $
+            </span>
+
+            <input
+              id="terminal-input"
+              style="
+                flex:1;
+                border:0;
+                outline:0;
+                background:#060606;
+                color:#aaa;
+                font:10px monospace;
+              "
+              placeholder="Command..."
+              autocomplete="off"
+            >
+
+          </div>
+
+        </div>
+
+      </div>
+
+    `;
+
+    const input =
+      $("#terminal-input");
+
+    const output =
+      $("#terminal-output");
+
+    input?.addEventListener(
+      "keydown",
+      async event => {
+
+        if (
+          event.key !==
+          "Enter"
+        )
+          return;
+
+        const command =
+          input.value.trim();
+
+        if (!command)
+          return;
+
+        input.value = "";
+
+        output.textContent +=
+          `\n$ ${command}\n`;
+
+        try {
+
+          const response =
+            await fetch(
+              "/api/terminal",
+              {
+
+                method: "POST",
+
+                headers: {
+                  "Content-Type":
+                    "application/json"
+                },
+
+                body:
+                  JSON.stringify({
+                    command
+                  })
+
+              }
+            );
+
+          const data =
+            await response.json();
+
+          if (!response.ok) {
+
+            throw new Error(
+              data?.error ||
+              `HTTP ${response.status}`
+            );
+
+          }
+
+          output.textContent +=
+            data?.output ||
+            data?.stdout ||
+            "(no output)\n";
+
+        } catch (error) {
+
+          output.textContent +=
+            `Error: ${error.message}\n`;
+
+        }
+
+        output.scrollTop =
+          output.scrollHeight;
+
+      }
+    );
+
+    input?.focus();
+
+  }
+
+  /* =========================
+     GIT
+  ========================= */
+
+  function renderGit(
+    body
+  ) {
+
+    body.innerHTML = `
+
+      <div style="
+        max-width:700px;
+        margin:60px auto;
+        text-align:center;
+        color:#555;
+        font-size:10px;
+      ">
+
+        <div style="
+          font-size:25px;
+          margin-bottom:12px;
+        ">
+          ⑂
+        </div>
+
+        <div style="
+          color:#888;
+          margin-bottom:7px;
+        ">
+          Git Workspace
+        </div>
+
+        Git backend belum dikonfigurasi.
+
+      </div>
+
+    `;
+
+  }
+
+  /* =========================
+     SEARCH
+  ========================= */
+
+  function renderSearch(
+    body
+  ) {
+
+    body.innerHTML = `
+
+      <div style="
+        max-width:800px;
+        margin:auto;
+      ">
+
+        <input
+          id="search-input"
+          class="field"
+          placeholder="Search workspace files..."
+          autocomplete="off"
+        >
+
+        <div
+          id="search-results"
+          style="
+            margin-top:12px;
+            color:#555;
+            font-size:9px;
+          "
+        >
+          Search uploaded files.
+        </div>
+
+      </div>
+
+    `;
+
+    const input =
+      $("#search-input");
+
+    const results =
+      $("#search-results");
+
+    input?.addEventListener(
+      "input",
+      () => {
+
+        const query =
+          input.value
+            .trim()
+            .toLowerCase();
+
+        if (!query) {
+
+          results.textContent =
+            "Search uploaded files.";
+
+          return;
+
+        }
+
+        const matches =
+          state.files.filter(
+            file =>
+              file.name
+                .toLowerCase()
+                .includes(query)
+          );
+
+        results.innerHTML =
+          matches.length
+
+            ? matches
+                .map(
+                  file =>
+                    `<div style="
+                      padding:9px;
+                      border-bottom:1px solid #171717;
+                    ">${escapeHTML(
+                      file.name
+                    )}</div>`
+                )
+                .join("")
+
+            : "No matching files.";
+
+      }
+    );
+
+    input?.focus();
+
+  }
+
+  /* =========================
+     HISTORY
+  ========================= */
+
+  function renderHistory(
+    body
+  ) {
+
+    if (
+      state.messages.length === 0
+    ) {
+
+      body.innerHTML = `
+
+        <div style="
+          padding:60px;
+          text-align:center;
+          color:#555;
+          font-size:10px;
+        ">
+          No chat history.
+        </div>
+
+      `;
+
+      return;
+
+    }
+
+    body.innerHTML = `
+
+      <div style="
+        max-width:850px;
+        margin:auto;
+      ">
+
+        ${state.messages
+          .map(
+            message => `
+
+              <div style="
+                padding:10px;
+                margin-bottom:5px;
+                border:1px solid #181818;
+                border-radius:5px;
+                background:#0b0b0b;
+              ">
+
+                <div style="
+                  margin-bottom:5px;
+                  color:#555;
+                  font-size:8px;
+                  text-transform:uppercase;
+                ">
+                  ${escapeHTML(
+                    message.role
+                  )}
+                </div>
+
+                <div style="
+                  color:#999;
+                  font-size:10px;
+                  white-space:pre-wrap;
+                ">
+                  ${escapeHTML(
+                    message.content
+                  )}
+                </div>
+
+              </div>
+
+            `
+          )
+          .join("")}
+
+      </div>
+
+    `;
+
+  }
+
+  /* =========================
+     NEW CHAT
+  ========================= */
+
+  function newChat() {
+
+    if (state.busy) {
+
+      toast(
+        "Tunggu AI selesai."
+      );
+
+      return;
+
+    }
+
+    state.messages = [];
+
+    saveHistory();
+
+    renderMessages();
+
+    openView(
+      "chat"
+    );
+
+    toast(
+      "New chat"
+    );
+
+  }
+
+  /* =========================
+     COMPOSER MODEL
+  ========================= */
+
+  function updateComposerModel() {
+
+    const select =
+      $("#composer-model");
+
+    if (!select)
+      return;
+
+    select.innerHTML = "";
+
+    const option =
+      document.createElement(
+        "option"
+      );
+
+    option.value =
+      state.settings.model;
+
+    option.textContent =
+      state.settings.model
+        ? `${state.settings.provider} · ${state.settings.model}`
+        : "Current model";
+
+    select.appendChild(
+      option
+    );
+
+  }
+
+  /* =========================
+     BUSY
+  ========================= */
+
+  function setBusy(
+    value
+  ) {
 
     state.busy =
       Boolean(value);
@@ -1210,198 +2027,183 @@ const OpenCodeLolo = (() => {
     const input =
       $("#message-input");
 
-    if (button)
+    if (button) {
+
       button.disabled =
         state.busy;
 
-    if (input)
+    }
+
+    if (input) {
+
       input.disabled =
         state.busy;
 
-    const status =
-      $("#model-status");
+    }
 
-    if (status) {
+    if (
+      state.busy
+    ) {
 
-      status.textContent =
-        state.busy
-          ? "Thinking..."
-          : `${getProvider()} · ${getSettings().model}`;
+      $("#model-status")
+        .textContent =
+        "Thinking...";
+
+    } else {
+
+      updateStatus();
 
     }
 
   }
 
-  function toast(message) {
+  /* =========================
+     TEXT HELPERS
+  ========================= */
 
-    if (
-      window.LoloUI &&
-      typeof window.LoloUI.toast ===
-        "function"
-    ) {
+  function escapeHTML(
+    value
+  ) {
 
-      window.LoloUI.toast(
-        message
+    return String(
+      value
+    )
+
+      .replaceAll(
+        "&",
+        "&amp;"
+      )
+
+      .replaceAll(
+        "<",
+        "&lt;"
+      )
+
+      .replaceAll(
+        ">",
+        "&gt;"
+      )
+
+      .replaceAll(
+        '"',
+        "&quot;"
+      )
+
+      .replaceAll(
+        "'",
+        "&#039;"
       );
 
-      return;
-    }
+  }
+
+  function formatBytes(
+    bytes
+  ) {
+
+    if (
+      !Number.isFinite(
+        bytes
+      )
+    )
+      return "";
+
+    if (
+      bytes < 1024
+    )
+      return `${bytes} B`;
+
+    if (
+      bytes < 1024 * 1024
+    )
+      return `${(
+        bytes / 1024
+      ).toFixed(1)} KB`;
+
+    return `${(
+      bytes /
+      (1024 * 1024)
+    ).toFixed(1)} MB`;
+
+  }
+
+  function toast(
+    message
+  ) {
 
     console.log(
       "[OPENCODELO]",
       message
     );
 
-  }
+    /*
+     * Small native notification.
+     */
 
-  /* =========================
-     FILES
-  ========================= */
+    let element =
+      $("#lolo-toast");
 
-  function handleFiles(
-    fileList
-  ) {
+    if (!element) {
 
-    [
-      ...fileList
-    ].forEach(
-      file => {
-
-        const reader =
-          new FileReader();
-
-        const textFile =
-          file.type.startsWith(
-            "text/"
-          ) ||
-          /\.(js|jsx|ts|tsx|html|css|json|md|txt|py|java|php|go|rs|c|cpp|h|sql|xml|yaml|yml)$/i
-            .test(
-              file.name
-            );
-
-        if (!textFile) {
-
-          state.files.push({
-            name:
-              file.name,
-            type:
-              file.type,
-            size:
-              file.size,
-            content:
-              ""
-          });
-
-          toast(
-            `${file.name} added`
-          );
-
-          return;
-
-        }
-
-        reader.onload = () => {
-
-          state.files.push({
-            name:
-              file.name,
-            type:
-              file.type,
-            size:
-              file.size,
-            content:
-              String(
-                reader.result || ""
-              )
-          });
-
-          toast(
-            `${file.name} added`
-          );
-
-        };
-
-        reader.onerror = () => {
-
-          state.files.push({
-            name:
-              file.name,
-            type:
-              file.type,
-            size:
-              file.size,
-            content:
-              ""
-          });
-
-          toast(
-            `${file.name} added`
-          );
-
-        };
-
-        reader.readAsText(
-          file
+      element =
+        document.createElement(
+          "div"
         );
 
-      }
-    );
+      element.id =
+        "lolo-toast";
 
-  }
+      element.style.cssText = `
 
-  /* =========================
-     NAVIGATION
-  ========================= */
+        position:fixed;
+        right:18px;
+        bottom:18px;
+        z-index:10000;
+        max-width:320px;
+        padding:10px 13px;
+        border:1px solid #292929;
+        border-radius:6px;
+        background:#111;
+        color:#aaa;
+        font-size:9px;
+        box-shadow:0 15px 40px rgba(0,0,0,.5);
+        transition:opacity .2s;
 
-  function openView(view) {
+      `;
 
-    state.currentView =
-      view;
-
-    document
-      .querySelectorAll(
-        "[data-view]"
-      )
-      .forEach(
-        element => {
-
-          element.classList.toggle(
-            "active",
-            element.dataset.view ===
-              view
-          );
-
-        }
+      document.body.appendChild(
+        element
       );
 
-    const title =
-      $("#top-title");
+    }
 
-    const names = {
-      chat: "Chat",
-      files: "Files",
-      editor: "Editor",
-      terminal: "Terminal",
-      git: "Git",
-      search: "Search"
-    };
+    element.textContent =
+      message;
 
-    if (title)
-      title.textContent =
-        names[view] ||
-        view;
+    element.style.opacity =
+      "1";
+
+    clearTimeout(
+      element._timer
+    );
+
+    element._timer =
+      setTimeout(
+        () => {
+
+          element.style.opacity =
+            "0";
+
+        },
+        2600
+      );
 
   }
 
   /* =========================
-     INIT
+     EVENTS
   ========================= */
 
   function bindEvents() {
-
-    /*
-     * Send button
-     */
 
     $("#send-button")
       ?.addEventListener(
@@ -1409,18 +2211,14 @@ const OpenCodeLolo = (() => {
         sendCurrentInput
       );
 
-    /*
-     * Enter = send
-     * Shift + Enter = newline
-     */
-
     $("#message-input")
       ?.addEventListener(
         "keydown",
         event => {
 
           if (
-            event.key === "Enter" &&
+            event.key ===
+              "Enter" &&
             !event.shiftKey
           ) {
 
@@ -1433,9 +2231,108 @@ const OpenCodeLolo = (() => {
         }
       );
 
-    /*
-     * File input
-     */
+    $("#message-input")
+      ?.addEventListener(
+        "input",
+        event => {
+
+          event.target.style.height =
+            "auto";
+
+          event.target.style.height =
+            `${Math.min(
+              event.target.scrollHeight,
+              180
+            )}px`;
+
+        }
+      );
+
+    $("#settings-button")
+      ?.addEventListener(
+        "click",
+        openSettings
+      );
+
+    $("#top-settings")
+      ?.addEventListener(
+        "click",
+        openSettings
+      );
+
+    $("#settings-close")
+      ?.addEventListener(
+        "click",
+        closeSettings
+      );
+
+    $("#settings-overlay")
+      ?.addEventListener(
+        "click",
+        event => {
+
+          if (
+            event.target ===
+            $("#settings-overlay")
+          ) {
+
+            closeSettings();
+
+          }
+
+        }
+      );
+
+    $("#provider-select")
+      ?.addEventListener(
+        "change",
+        providerChanged
+      );
+
+    $("#show-key-button")
+      ?.addEventListener(
+        "click",
+        toggleKey
+      );
+
+    $("#save-settings")
+      ?.addEventListener(
+        "click",
+        saveSettingsFromUI
+      );
+
+    $("#test-connection")
+      ?.addEventListener(
+        "click",
+        testConnection
+      );
+
+    $("#new-chat-button")
+      ?.addEventListener(
+        "click",
+        newChat
+      );
+
+    $("#upload-button")
+      ?.addEventListener(
+        "click",
+        openUpload
+      );
+
+    $("#history-button")
+      ?.addEventListener(
+        "click",
+        () =>
+          openWorkspace(
+            "history"
+          )
+      );
+
+    $("#workspace-close")
+      ?.addEventListener(
+        "click",
+        closeWorkspace
+      );
 
     $("#file-input")
       ?.addEventListener(
@@ -1451,26 +2348,6 @@ const OpenCodeLolo = (() => {
 
         }
       );
-
-    /*
-     * Settings buttons
-     */
-
-    $("#settings-button")
-      ?.addEventListener(
-        "click",
-        openSettings
-      );
-
-    $("#open-settings")
-      ?.addEventListener(
-        "click",
-        openSettings
-      );
-
-    /*
-     * Generic view buttons
-     */
 
     document
       .querySelectorAll(
@@ -1495,6 +2372,10 @@ const OpenCodeLolo = (() => {
 
   }
 
+  /* =========================
+     INIT
+  ========================= */
+
   function init() {
 
     loadSettings();
@@ -1503,16 +2384,14 @@ const OpenCodeLolo = (() => {
 
     bindEvents();
 
-    /*
-     * Create Settings only when
-     * user opens it.
-     */
+    updateComposerModel();
 
-    updateProviderUI();
+    updateStatus();
+
+    renderMessages();
 
     console.log(
-      "OPENCODELO.10 ready",
-      getSettings()
+      "OPENCODELO.10 initialized."
     );
 
   }
@@ -1527,35 +2406,25 @@ const OpenCodeLolo = (() => {
 
     openSettings,
 
-    saveSettings:
-      saveSettingsFromUI,
+    closeSettings,
 
     testConnection,
 
-    newChat() {
-
-      state.messages = [];
-
-      saveHistory();
-
-      toast(
-        "New chat"
-      );
-
-    },
-
-    upload() {
-
-      $("#file-input")
-        ?.click();
-
-    },
+    saveSettings:
+      saveSettingsFromUI,
 
     openView,
 
-    getSettings,
+    newChat,
 
-    getProvider
+    upload:
+      openUpload,
+
+    getSettings:
+      () =>
+        ({
+          ...state.settings
+        })
 
   };
 
