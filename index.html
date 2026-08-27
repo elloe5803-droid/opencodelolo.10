@@ -1,788 +1,1149 @@
+```html
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en">
 <head>
-  <meta charset="UTF-8" />
-
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  />
-
-  <meta
-    name="theme-color"
-    content="#09090b"
-  />
-
-  <title>OpenCode Lolo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#0a0a0a">
+  <title>OPENCODELO.10</title>
 
   <style>
-    * {
-      box-sizing: border-box;
+    :root{
+      --bg:#090909;
+      --panel:#0d0d0d;
+      --panel2:#111111;
+      --panel3:#151515;
+      --line:#202020;
+      --line2:#292929;
+      --text:#ededed;
+      --muted:#858585;
+      --dim:#5b5b5b;
+      --white:#f5f5f5;
+      --danger:#e45b5b;
+      --green:#75c991;
+      --blue:#79a8ff;
     }
 
-    html,
-    body {
-      margin: 0;
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
+    *{
+      box-sizing:border-box;
+    }
+
+    html,body{
+      width:100%;
+      height:100%;
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
       font-family:
         Inter,
         ui-sans-serif,
-        system-ui,
         -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
-      background: #09090b;
-      color: #fafafa;
+    }
+
+    body{
+      overflow:hidden;
     }
 
     button,
     input,
     textarea,
-    select {
-      font: inherit;
+    select{
+      font:inherit;
     }
 
-    button {
-      cursor: pointer;
+    button{
+      border:0;
+      cursor:pointer;
     }
 
     /* =========================
        APP
-       ========================= */
+    ========================= */
 
-    .app {
-      display: grid;
-      grid-template-columns: 250px 1fr;
-      width: 100%;
-      height: 100%;
-      background: #09090b;
+    .app{
+      display:grid;
+      grid-template-columns:48px 238px 1fr;
+      width:100%;
+      height:100%;
+    }
+
+    /* =========================
+       RAIL
+    ========================= */
+
+    .rail{
+      display:flex;
+      flex-direction:column;
+      justify-content:space-between;
+      align-items:center;
+      padding:10px 0;
+      border-right:1px solid var(--line);
+      background:#080808;
+    }
+
+    .rail-top,
+    .rail-bottom{
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:4px;
+    }
+
+    .logo{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:30px;
+      height:30px;
+      margin-bottom:10px;
+      border:1px solid #303030;
+      border-radius:6px;
+      color:#fff;
+      font-size:10px;
+      font-weight:800;
+      letter-spacing:-.04em;
+    }
+
+    .rail-btn{
+      position:relative;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:34px;
+      height:34px;
+      border-radius:5px;
+      background:transparent;
+      color:#686868;
+      font-size:14px;
+      transition:
+        background .15s,
+        color .15s;
+    }
+
+    .rail-btn:hover{
+      background:#151515;
+      color:#ddd;
+    }
+
+    .rail-btn.active{
+      background:#151515;
+      color:#fff;
+    }
+
+    .rail-btn.active::before{
+      position:absolute;
+      left:-7px;
+      width:2px;
+      height:15px;
+      border-radius:2px;
+      background:#fff;
+      content:"";
     }
 
     /* =========================
        SIDEBAR
-       ========================= */
+    ========================= */
 
-    .sidebar {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      border-right: 1px solid #27272a;
-      background: #111113;
+    .sidebar{
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      border-right:1px solid var(--line);
+      background:#0b0b0b;
     }
 
-    .brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      height: 58px;
-      padding: 0 15px;
-      border-bottom: 1px solid #27272a;
+    .sidebar-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      height:48px;
+      padding:0 12px;
+      border-bottom:1px solid var(--line);
     }
 
-    .brand-logo {
-      display: grid;
-      place-items: center;
-      width: 30px;
-      height: 30px;
-      border-radius: 8px;
-      background: #fafafa;
-      color: #09090b;
-      font-size: 15px;
-      font-weight: 800;
+    .brand{
+      color:#ddd;
+      font-size:11px;
+      font-weight:700;
+      letter-spacing:.035em;
     }
 
-    .brand-text {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
+    .brand span{
+      color:#686868;
+      font-weight:500;
     }
 
-    .brand-title {
-      font-size: 14px;
-      font-weight: 700;
+    .icon-btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:28px;
+      height:28px;
+      border-radius:5px;
+      background:transparent;
+      color:#686868;
+      font-size:14px;
     }
 
-    .brand-subtitle {
-      color: #71717a;
-      font-size: 11px;
+    .icon-btn:hover{
+      background:#161616;
+      color:#eee;
     }
 
-    .sidebar-content {
-      flex: 1;
-      overflow-y: auto;
-      padding: 10px;
+    .sidebar-content{
+      flex:1;
+      overflow:auto;
+      padding:10px 8px;
     }
 
-    .nav-section {
-      margin-bottom: 18px;
+    .section{
+      margin-bottom:17px;
     }
 
-    .nav-label {
-      padding: 7px 9px;
-      color: #71717a;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: .08em;
-      text-transform: uppercase;
+    .section-label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding:5px 7px;
+      color:#5e5e5e;
+      font-size:9px;
+      font-weight:700;
+      letter-spacing:.1em;
+      text-transform:uppercase;
     }
 
-    .nav-button {
-      display: flex;
-      align-items: center;
-      width: 100%;
-      min-height: 38px;
-      gap: 10px;
-      padding: 8px 10px;
-      margin: 2px 0;
-      border: 0;
-      border-radius: 7px;
-      background: transparent;
-      color: #a1a1aa;
-      text-align: left;
-      transition: .15s ease;
+    .item{
+      display:flex;
+      align-items:center;
+      width:100%;
+      min-height:31px;
+      gap:8px;
+      padding:5px 8px;
+      margin:1px 0;
+      border-radius:4px;
+      background:transparent;
+      color:#898989;
+      text-align:left;
+      font-size:11px;
     }
 
-    .nav-button:hover {
-      background: #27272a;
-      color: #fff;
+    .item:hover{
+      background:#151515;
+      color:#ddd;
     }
 
-    .nav-button.active {
-      background: #27272a;
-      color: #fff;
+    .item.active{
+      background:#181818;
+      color:#eee;
     }
 
-    .nav-icon {
-      width: 20px;
-      text-align: center;
-      font-size: 15px;
+    .item-icon{
+      width:15px;
+      color:#5d5d5d;
+      text-align:center;
+      font-size:12px;
     }
 
-    .nav-text {
-      flex: 1;
-      font-size: 13px;
+    .item.active .item-icon{
+      color:#aaa;
     }
 
-    .sidebar-bottom {
-      padding: 10px;
-      border-top: 1px solid #27272a;
+    .item-text{
+      flex:1;
+      min-width:0;
+      overflow:hidden;
+      white-space:nowrap;
+      text-overflow:ellipsis;
     }
 
-    .status {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 9px;
-      color: #a1a1aa;
-      font-size: 11px;
+    .shortcut{
+      color:#505050;
+      font-size:8px;
     }
 
-    .status-dot {
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #71717a;
+    .sidebar-footer{
+      padding:8px;
+      border-top:1px solid var(--line);
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap:7px;
+      padding:7px;
+      color:#626262;
+      font-size:9px;
+    }
+
+    .status-dot{
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:#5a5a5a;
+    }
+
+    .status-dot.online{
+      background:var(--green);
     }
 
     /* =========================
        MAIN
-       ========================= */
+    ========================= */
 
-    .main {
-      display: flex;
-      flex-direction: column;
-      min-width: 0;
-      height: 100%;
+    .main{
+      position:relative;
+      display:flex;
+      flex-direction:column;
+      min-width:0;
+      height:100%;
+      background:var(--bg);
     }
 
-    .topbar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      height: 58px;
-      padding: 0 14px;
-      border-bottom: 1px solid #27272a;
-      background: #0f0f11;
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      height:48px;
+      padding:0 13px;
+      border-bottom:1px solid var(--line);
+      background:#0b0b0b;
     }
 
-    .topbar-left,
-    .topbar-right {
-      display: flex;
-      align-items: center;
-      gap: 7px;
+    .top-left,
+    .top-right{
+      display:flex;
+      align-items:center;
+      gap:3px;
     }
 
-    .mobile-menu {
-      display: none;
+    .top-title{
+      margin-left:7px;
+      color:#8c8c8c;
+      font-size:10px;
     }
 
-    .topbar-button {
-      display: grid;
-      place-items: center;
-      width: 34px;
-      height: 34px;
-      border: 1px solid transparent;
-      border-radius: 7px;
-      background: transparent;
-      color: #a1a1aa;
-      font-size: 16px;
+    .top-btn{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:28px;
+      height:28px;
+      border-radius:5px;
+      background:transparent;
+      color:#666;
+      font-size:13px;
     }
 
-    .topbar-button:hover {
-      background: #27272a;
-      color: #fff;
-    }
-
-    .chat-title {
-      margin-left: 5px;
-      color: #e4e4e7;
-      font-size: 13px;
-      font-weight: 600;
+    .top-btn:hover{
+      background:#161616;
+      color:#eee;
     }
 
     /* =========================
        CHAT
-       ========================= */
+    ========================= */
 
-    #messages {
-      flex: 1;
-      width: 100%;
-      overflow-y: auto;
-      padding: 30px 20px 160px;
+    .chat{
+      flex:1;
+      overflow:auto;
+      padding:0 24px 185px;
     }
 
-    .welcome {
-      width: min(760px, 100%);
-      margin: 10vh auto 0;
-      text-align: center;
+    .chat-inner{
+      width:min(860px,100%);
+      margin:auto;
     }
 
-    .welcome-logo {
-      display: grid;
-      place-items: center;
-      width: 48px;
-      height: 48px;
-      margin: 0 auto 18px;
-      border-radius: 14px;
-      background: #fafafa;
-      color: #09090b;
-      font-size: 22px;
-      font-weight: 800;
+    .welcome{
+      padding-top:16vh;
+      text-align:center;
     }
 
-    .welcome h1 {
-      margin: 0 0 8px;
-      font-size: 27px;
-      letter-spacing: -.03em;
+    .welcome-mark{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:38px;
+      height:38px;
+      margin:0 auto 20px;
+      border:1px solid #292929;
+      border-radius:7px;
+      color:#eee;
+      font-size:11px;
+      font-weight:800;
+      letter-spacing:-.05em;
     }
 
-    .welcome p {
-      margin: 0;
-      color: #71717a;
-      font-size: 14px;
+    .welcome h1{
+      margin:0;
+      color:#e9e9e9;
+      font-size:24px;
+      font-weight:500;
+      letter-spacing:-.04em;
     }
 
-    .suggestions {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 8px;
-      margin-top: 28px;
+    .welcome p{
+      margin:9px 0 0;
+      color:#555;
+      font-size:11px;
     }
 
-    .suggestion {
-      padding: 13px;
-      border: 1px solid #27272a;
-      border-radius: 9px;
-      background: #111113;
-      color: #a1a1aa;
-      text-align: left;
-      font-size: 12px;
-      transition: .15s ease;
+    .suggestions{
+      display:grid;
+      grid-template-columns:repeat(2,1fr);
+      width:min(590px,100%);
+      gap:5px;
+      margin:28px auto 0;
     }
 
-    .suggestion:hover {
-      border-color: #52525b;
-      background: #18181b;
-      color: #fff;
+    .suggestion{
+      min-height:58px;
+      padding:11px;
+      border:1px solid var(--line);
+      border-radius:5px;
+      background:#0c0c0c;
+      color:#777;
+      text-align:left;
+      transition:
+        background .15s,
+        border .15s,
+        color .15s;
+    }
+
+    .suggestion:hover{
+      border-color:#303030;
+      background:#111;
+      color:#ccc;
+    }
+
+    .suggestion-title{
+      margin-bottom:4px;
+      color:#aaa;
+      font-size:10px;
+      font-weight:600;
+    }
+
+    .suggestion-desc{
+      color:#505050;
+      font-size:9px;
+      line-height:1.4;
     }
 
     /* =========================
-       MESSAGE
-       ========================= */
+       MESSAGES
+    ========================= */
 
-    .message {
-      width: min(850px, 100%);
-      margin: 0 auto 20px;
+    .message{
+      padding:22px 0;
+      border-bottom:1px solid #151515;
     }
 
-    .message-role {
-      margin-bottom: 6px;
-      color: #71717a;
-      font-size: 11px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: .06em;
+    .message-head{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      margin-bottom:8px;
     }
 
-    .message-content {
-      padding: 13px 15px;
-      border: 1px solid #27272a;
-      border-radius: 10px;
-      background: #111113;
-      color: #e4e4e7;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-      font-size: 14px;
-      line-height: 1.65;
+    .avatar{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:20px;
+      height:20px;
+      border:1px solid #292929;
+      border-radius:4px;
+      color:#aaa;
+      font-size:8px;
+      font-weight:700;
     }
 
-    .user-message .message-content {
-      background: #18181b;
+    .role{
+      color:#858585;
+      font-size:10px;
+      font-weight:600;
+    }
+
+    .message-body{
+      padding-left:28px;
+      color:#c4c4c4;
+      font-size:12px;
+      line-height:1.75;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+    }
+
+    .user .message-body{
+      color:#ddd;
     }
 
     /* =========================
        COMPOSER
-       ========================= */
+    ========================= */
 
-    .composer-wrap {
-      position: absolute;
-      right: 0;
-      bottom: 0;
-      left: 250px;
-      padding: 15px 20px 20px;
+    .composer-wrap{
+      position:absolute;
+      right:0;
+      bottom:0;
+      left:0;
+      padding:12px 24px 17px;
+      pointer-events:none;
       background:
         linear-gradient(
           to bottom,
           transparent,
-          #09090b 25%
+          var(--bg) 35%
         );
-      pointer-events: none;
     }
 
-    .composer {
-      width: min(850px, 100%);
-      margin: 0 auto;
-      pointer-events: auto;
+    .composer{
+      width:min(860px,100%);
+      margin:auto;
+      pointer-events:auto;
     }
 
-    .composer-box {
-      display: flex;
-      align-items: flex-end;
-      gap: 8px;
-      padding: 8px;
-      border: 1px solid #3f3f46;
-      border-radius: 12px;
-      background: #18181b;
-      box-shadow:
-        0 12px 40px rgba(0, 0, 0, .25);
+    .composer-box{
+      border:1px solid #292929;
+      border-radius:7px;
+      background:#101010;
+      box-shadow:0 15px 50px rgba(0,0,0,.32);
     }
 
-    #message-input {
-      flex: 1;
-      min-width: 0;
-      max-height: 180px;
-      min-height: 44px;
-      padding: 11px 8px;
-      border: 0;
-      outline: 0;
-      resize: none;
-      background: transparent;
-      color: #fafafa;
-      font-size: 14px;
-      line-height: 1.5;
+    .input-row{
+      display:flex;
+      align-items:flex-end;
+      padding:5px;
     }
 
-    #message-input::placeholder {
-      color: #71717a;
+    #message-input{
+      flex:1;
+      min-width:0;
+      min-height:43px;
+      max-height:180px;
+      padding:10px 8px;
+      border:0;
+      outline:0;
+      resize:none;
+      background:transparent;
+      color:#e8e8e8;
+      font-size:12px;
+      line-height:1.5;
     }
 
-    .composer-button {
-      display: grid;
-      place-items: center;
-      width: 38px;
-      height: 38px;
-      flex-shrink: 0;
-      border: 0;
-      border-radius: 8px;
-      background: transparent;
-      color: #a1a1aa;
-      font-size: 17px;
+    #message-input::placeholder{
+      color:#4c4c4c;
     }
 
-    .composer-button:hover {
-      background: #27272a;
-      color: #fff;
+    .send{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:30px;
+      height:30px;
+      margin:2px;
+      border-radius:5px;
+      background:#e7e7e7;
+      color:#0a0a0a;
+      font-size:13px;
     }
 
-    #send-button {
-      background: #fafafa;
-      color: #09090b;
+    .send:hover{
+      background:#fff;
     }
 
-    #send-button:hover {
-      background: #e4e4e7;
+    .composer-bar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      min-height:32px;
+      padding:0 6px 5px;
     }
 
-    .composer-footer {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 7px 3px 0;
-      color: #52525b;
-      font-size: 10px;
+    .composer-left{
+      display:flex;
+      align-items:center;
+      gap:2px;
+      min-width:0;
+    }
+
+    .tool{
+      display:flex;
+      align-items:center;
+      height:25px;
+      padding:0 6px;
+      border-radius:4px;
+      background:transparent;
+      color:#5c5c5c;
+      font-size:9px;
+    }
+
+    .tool:hover{
+      background:#181818;
+      color:#aaa;
+    }
+
+    #model-select{
+      max-width:190px;
+      height:25px;
+      padding:0 5px;
+      border:0;
+      outline:0;
+      border-radius:4px;
+      background:transparent;
+      color:#686868;
+      font-size:9px;
+    }
+
+    #model-select:hover{
+      background:#181818;
+      color:#aaa;
+    }
+
+    .ready{
+      color:#4d4d4d;
+      font-size:8px;
     }
 
     /* =========================
-       LIGHT MODE
-       ========================= */
+       MODALS
+    ========================= */
 
-    body.lolo-light,
-    body.lolo-light .app {
-      background: #fafafa;
-      color: #18181b;
+    .overlay{
+      position:fixed;
+      inset:0;
+      z-index:1000;
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding:20px;
+      background:rgba(0,0,0,.68);
+      backdrop-filter:blur(5px);
     }
 
-    body.lolo-light .sidebar,
-    body.lolo-light .topbar {
-      background: #fff;
-      border-color: #e4e4e7;
+    .overlay.open{
+      display:flex;
     }
 
-    body.lolo-light .nav-button {
-      color: #52525b;
+    .modal{
+      width:min(680px,100%);
+      max-height:88vh;
+      overflow:hidden;
+      border:1px solid #292929;
+      border-radius:7px;
+      background:#0d0d0d;
+      box-shadow:0 30px 100px rgba(0,0,0,.55);
     }
 
-    body.lolo-light .nav-button:hover,
-    body.lolo-light .nav-button.active {
-      background: #f4f4f5;
-      color: #18181b;
+    .modal-head{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      height:46px;
+      padding:0 13px;
+      border-bottom:1px solid var(--line);
     }
 
-    body.lolo-light #messages {
-      background: #fafafa;
+    .modal-title{
+      color:#ccc;
+      font-size:11px;
+      font-weight:600;
     }
 
-    body.lolo-light .message-content,
-    body.lolo-light .composer-box {
-      background: #fff;
-      border-color: #d4d4d8;
-      color: #18181b;
+    .modal-close{
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:27px;
+      height:27px;
+      border-radius:4px;
+      background:transparent;
+      color:#666;
     }
 
-    body.lolo-light .composer-wrap {
-      background:
-        linear-gradient(
-          to bottom,
-          transparent,
-          #fafafa 25%
-        );
+    .modal-close:hover{
+      background:#181818;
+      color:#ddd;
     }
 
-    body.lolo-light #message-input {
-      color: #18181b;
+    .modal-body{
+      max-height:calc(88vh - 46px);
+      overflow:auto;
+      padding:14px;
     }
 
-    body.lolo-light .suggestion {
-      background: #fff;
-      border-color: #e4e4e7;
-      color: #52525b;
+    .setting{
+      margin-bottom:17px;
+    }
+
+    .setting-label{
+      display:block;
+      margin-bottom:6px;
+      color:#858585;
+      font-size:9px;
+      font-weight:600;
+      text-transform:uppercase;
+      letter-spacing:.05em;
+    }
+
+    .field{
+      width:100%;
+      height:34px;
+      padding:0 9px;
+      border:1px solid #242424;
+      border-radius:4px;
+      outline:0;
+      background:#090909;
+      color:#ddd;
+      font-size:10px;
+    }
+
+    .field:focus{
+      border-color:#3a3a3a;
+    }
+
+    .provider{
+      padding:11px;
+      margin-bottom:5px;
+      border:1px solid #202020;
+      border-radius:5px;
+      background:#101010;
+    }
+
+    .provider-name{
+      margin-bottom:3px;
+      color:#c7c7c7;
+      font-size:10px;
+      font-weight:600;
+    }
+
+    .provider-info{
+      color:#555;
+      font-size:9px;
+    }
+
+    .actions{
+      display:flex;
+      justify-content:flex-end;
+      gap:5px;
+      margin-top:18px;
+    }
+
+    .button{
+      height:31px;
+      padding:0 11px;
+      border-radius:4px;
+      background:#191919;
+      color:#999;
+      font-size:9px;
+    }
+
+    .button:hover{
+      color:#eee;
+    }
+
+    .button.primary{
+      background:#e5e5e5;
+      color:#090909;
+    }
+
+    /* =========================
+       TOAST
+    ========================= */
+
+    .toasts{
+      position:fixed;
+      right:14px;
+      bottom:14px;
+      z-index:5000;
+      display:flex;
+      flex-direction:column;
+      gap:5px;
+    }
+
+    .toast{
+      max-width:330px;
+      padding:9px 11px;
+      border:1px solid #292929;
+      border-radius:4px;
+      background:#151515;
+      color:#aaa;
+      font-size:9px;
+      box-shadow:0 10px 40px rgba(0,0,0,.4);
     }
 
     /* =========================
        MOBILE
-       ========================= */
+    ========================= */
 
-    @media (max-width: 760px) {
-      .app {
-        grid-template-columns: 1fr;
-      }
-
-      .sidebar {
-        position: fixed;
-        top: 0;
-        bottom: 0;
-        left: -280px;
-        z-index: 5000;
-        width: 270px;
-        transition: left .2s ease;
-        box-shadow: 15px 0 40px rgba(0, 0, 0, .35);
-      }
-
-      body.sidebar-open .sidebar {
-        left: 0;
-      }
-
-      .mobile-menu {
-        display: grid;
-      }
-
-      .composer-wrap {
-        left: 0;
-        padding: 10px 10px 12px;
-      }
-
-      #messages {
-        padding: 20px 12px 140px;
-      }
-
-      .welcome {
-        margin-top: 8vh;
-      }
-
-      .welcome h1 {
-        font-size: 23px;
-      }
-
-      .suggestions {
-        grid-template-columns: 1fr;
-      }
-
-      .chat-title {
-        max-width: 150px;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-      }
+    .mobile-menu{
+      display:none;
     }
 
-    @media (max-width: 420px) {
-      .topbar {
-        padding: 0 8px;
+    @media(max-width:800px){
+
+      .app{
+        grid-template-columns:1fr;
       }
 
-      .topbar-right .hide-mobile {
-        display: none;
+      .rail{
+        display:none;
       }
 
-      .composer-footer {
-        display: none;
+      .sidebar{
+        position:fixed;
+        top:0;
+        bottom:0;
+        left:-300px;
+        z-index:3000;
+        width:270px;
+        transition:left .2s ease;
+        box-shadow:20px 0 70px rgba(0,0,0,.5);
+      }
+
+      body.sidebar-open .sidebar{
+        left:0;
+      }
+
+      .mobile-menu{
+        display:flex;
+      }
+
+      .chat{
+        padding-right:13px;
+        padding-left:13px;
+      }
+
+      .composer-wrap{
+        padding-right:10px;
+        padding-left:10px;
+      }
+
+      .suggestions{
+        grid-template-columns:1fr;
+      }
+
+      .welcome{
+        padding-top:10vh;
+      }
+
+      .welcome h1{
+        font-size:21px;
+      }
+
+      #model-select{
+        max-width:125px;
       }
     }
   </style>
 </head>
 
-<body class="lolo-dark">
+<body>
 
-  <div class="app">
+<div class="app">
 
-    <!-- =====================
-         SIDEBAR
-         ===================== -->
+  <!-- =========================
+       RAIL
+  ========================== -->
 
-    <aside class="sidebar">
+  <aside class="rail">
+
+    <div class="rail-top">
+
+      <div class="logo">
+        O10
+      </div>
+
+      <button
+        class="rail-btn active"
+        data-view="chat"
+        title="Chat"
+      >◉</button>
+
+      <button
+        class="rail-btn"
+        data-view="files"
+        title="Files"
+      >▤</button>
+
+      <button
+        class="rail-btn"
+        data-view="editor"
+        title="Editor"
+      >⌘</button>
+
+      <button
+        class="rail-btn"
+        data-view="terminal"
+        title="Terminal"
+      >&gt;_</button>
+
+      <button
+        class="rail-btn"
+        data-view="git"
+        title="Git"
+      >◇</button>
+
+      <button
+        class="rail-btn"
+        data-view="search"
+        title="Search"
+      >⌕</button>
+
+    </div>
+
+    <div class="rail-bottom">
+
+      <button
+        class="rail-btn"
+        data-action="settings"
+        title="Settings"
+      >⚙</button>
+
+      <button
+        class="rail-btn"
+        data-action="help"
+        title="Help"
+      >?</button>
+
+    </div>
+
+  </aside>
+
+  <!-- =========================
+       SIDEBAR
+  ========================== -->
+
+  <aside class="sidebar">
+
+    <div class="sidebar-head">
 
       <div class="brand">
-        <div class="brand-logo">
-          O
-        </div>
-
-        <div class="brand-text">
-          <div class="brand-title">
-            OpenCode Lolo
-          </div>
-
-          <div class="brand-subtitle">
-            AI Coding Workspace
-          </div>
-        </div>
+        OPENCODELO<span>.10</span>
       </div>
 
-      <div class="sidebar-content">
+      <button
+        class="icon-btn"
+        data-action="new-chat"
+        title="New chat"
+      >+</button>
 
-        <div class="nav-section">
+    </div>
 
-          <div class="nav-label">
-            Workspace
-          </div>
+    <div class="sidebar-content">
 
-          <button
-            class="nav-button active"
-            type="button"
-            data-action="new-chat"
-          >
-            <span class="nav-icon">＋</span>
-            <span class="nav-text">
-              New Chat
-            </span>
-          </button>
+      <section class="section">
 
-          <button
-            class="nav-button"
-            type="button"
-            data-action="history"
-          >
-            <span class="nav-icon">◷</span>
-            <span class="nav-text">
-              History
-            </span>
-          </button>
-
-          <button
-            class="nav-button"
-            type="button"
-            data-action="search"
-          >
-            <span class="nav-icon">⌕</span>
-            <span class="nav-text">
-              Search
-            </span>
-          </button>
-
+        <div class="section-label">
+          Workspace
         </div>
 
-        <div class="nav-section">
+        <button
+          class="item active"
+          data-action="new-chat"
+        >
+          <span class="item-icon">+</span>
+          <span class="item-text">New Chat</span>
+          <span class="shortcut">N</span>
+        </button>
 
-          <div class="nav-label">
-            Project
-          </div>
+        <button
+          class="item"
+          data-action="history"
+        >
+          <span class="item-icon">◷</span>
+          <span class="item-text">History</span>
+        </button>
 
-          <button
-            class="nav-button"
-            type="button"
-            data-action="files"
-          >
-            <span class="nav-icon">▱</span>
-            <span class="nav-text">
-              Files
-            </span>
-          </button>
+      </section>
 
-          <button
-            class="nav-button"
-            type="button"
-            data-action="terminal"
-          >
-            <span class="nav-icon">⌘</span>
-            <span class="nav-text">
-              Terminal
-            </span>
-          </button>
+      <section class="section">
 
-          <button
-            class="nav-button"
-            type="button"
-            data-action="upload"
-          >
-            <span class="nav-icon">↑</span>
-            <span class="nav-text">
-              Upload
-            </span>
-          </button>
-
+        <div class="section-label">
+          Project
         </div>
 
-        <div class="nav-section">
+        <button
+          class="item"
+          data-view="files"
+        >
+          <span class="item-icon">▤</span>
+          <span class="item-text">Files</span>
+        </button>
 
-          <div class="nav-label">
-            Configuration
-          </div>
+        <button
+          class="item"
+          data-view="editor"
+        >
+          <span class="item-icon">⌘</span>
+          <span class="item-text">Editor</span>
+        </button>
 
-          <button
-            class="nav-button"
-            type="button"
-            data-action="settings"
-          >
-            <span class="nav-icon">⚙</span>
-            <span class="nav-text">
-              Settings
-            </span>
-          </button>
+        <button
+          class="item"
+          data-view="terminal"
+        >
+          <span class="item-icon">&gt;_</span>
+          <span class="item-text">Terminal</span>
+        </button>
 
+        <button
+          class="item"
+          data-view="git"
+        >
+          <span class="item-icon">◇</span>
+          <span class="item-text">Git</span>
+        </button>
+
+      </section>
+
+      <section class="section">
+
+        <div class="section-label">
+          Tools
         </div>
+
+        <button
+          class="item"
+          data-action="upload"
+        >
+          <span class="item-icon">↑</span>
+          <span class="item-text">Upload Files</span>
+        </button>
+
+        <button
+          class="item"
+          data-action="search"
+        >
+          <span class="item-icon">⌕</span>
+          <span class="item-text">Search</span>
+          <span class="shortcut">K</span>
+        </button>
+
+      </section>
+
+      <section class="section">
+
+        <div class="section-label">
+          AI
+        </div>
+
+        <button
+          class="item"
+          data-action="providers"
+        >
+          <span class="item-icon">◎</span>
+          <span class="item-text">Providers</span>
+        </button>
+
+        <button
+          class="item"
+          data-action="settings"
+        >
+          <span class="item-icon">⚙</span>
+          <span class="item-text">Settings</span>
+        </button>
+
+      </section>
+
+    </div>
+
+    <div class="sidebar-footer">
+
+      <div class="status">
+
+        <span
+          class="status-dot"
+          id="connection-dot"
+        ></span>
+
+        <span id="connection-text">
+          Provider not connected
+        </span>
 
       </div>
 
-      <div class="sidebar-bottom">
+    </div>
 
-        <div class="status">
-          <span class="status-dot"></span>
+  </aside>
 
-          <span>
-            Browser workspace
-          </span>
-        </div>
+  <!-- =========================
+       MAIN
+  ========================== -->
+
+  <main class="main">
+
+    <header class="topbar">
+
+      <div class="top-left">
+
+        <button
+          class="top-btn mobile-menu"
+          id="mobile-menu"
+        >☰</button>
+
+        <button
+          class="top-btn"
+          data-action="new-chat"
+          title="New chat"
+        >+</button>
+
+        <span
+          class="top-title"
+          id="top-title"
+        >
+          New Chat
+        </span>
 
       </div>
 
-    </aside>
+      <div class="top-right">
 
-    <!-- =====================
-         MAIN
-         ===================== -->
+        <button
+          class="top-btn"
+          data-action="search"
+          title="Search"
+        >⌕</button>
 
-    <main class="main">
+        <button
+          class="top-btn"
+          data-action="providers"
+          title="Providers"
+        >◎</button>
 
-      <header class="topbar">
+        <button
+          class="top-btn"
+          data-action="settings"
+          title="Settings"
+        >⚙</button>
 
-        <div class="topbar-left">
+      </div>
 
-          <button
-            class="topbar-button mobile-menu"
-            type="button"
-            id="mobile-menu-button"
-            aria-label="Menu"
-          >
-            ☰
-          </button>
+    </header>
 
-          <button
-            class="topbar-button"
-            type="button"
-            data-action="new-chat"
-            title="New chat"
-          >
-            ＋
-          </button>
+    <!-- =========================
+         CHAT
+    ========================== -->
 
-          <div
-            class="chat-title"
-            id="chat-title"
-          >
-            New Chat
-          </div>
+    <section
+      class="chat"
+      id="chat-view"
+    >
 
-        </div>
-
-        <div class="topbar-right">
-
-          <button
-            class="topbar-button hide-mobile"
-            type="button"
-            data-action="search"
-            title="Search"
-          >
-            ⌕
-          </button>
-
-          <button
-            class="topbar-button"
-            type="button"
-            data-action="settings"
-            title="Settings"
-          >
-            ⚙
-          </button>
-
-        </div>
-
-      </header>
-
-      <!-- =====================
-           CHAT MESSAGES
-           ===================== -->
-
-      <section id="messages">
+      <div
+        class="chat-inner"
+        id="messages"
+      >
 
         <div
           class="welcome"
           id="welcome"
         >
 
-          <div class="welcome-logo">
-            O
+          <div class="welcome-mark">
+            O10
           </div>
 
           <h1>
@@ -790,55 +1151,74 @@
           </h1>
 
           <p>
-            Build, debug and explore your project
-            with OpenCode Lolo.
+            Code. Debug. Explore. Ship.
           </p>
 
           <div class="suggestions">
 
             <button
               class="suggestion"
-              type="button"
-              data-suggestion="Build a modern responsive website for me."
+              data-suggestion="Build a complete responsive web application."
             >
-              Build a website
+              <div class="suggestion-title">
+                Build an application
+              </div>
+
+              <div class="suggestion-desc">
+                Start from an idea and generate the project.
+              </div>
             </button>
 
             <button
               class="suggestion"
-              type="button"
-              data-suggestion="Help me debug my code."
+              data-suggestion="Analyze my project and find bugs, errors, and improvements."
             >
-              Debug my code
+              <div class="suggestion-title">
+                Analyze project
+              </div>
+
+              <div class="suggestion-desc">
+                Find bugs and areas that need improvement.
+              </div>
             </button>
 
             <button
               class="suggestion"
-              type="button"
-              data-suggestion="Explain this code step by step."
+              data-suggestion="Explain the architecture and important files in my project."
             >
-              Explain code
+              <div class="suggestion-title">
+                Understand code
+              </div>
+
+              <div class="suggestion-desc">
+                Get a clear explanation of your codebase.
+              </div>
             </button>
 
             <button
               class="suggestion"
-              type="button"
-              data-suggestion="Create a complete application architecture for my project."
+              data-suggestion="Improve the user interface of this application."
             >
-              Design an app
+              <div class="suggestion-title">
+                Improve interface
+              </div>
+
+              <div class="suggestion-desc">
+                Make the UI cleaner and more professional.
+              </div>
             </button>
 
           </div>
 
         </div>
 
-      </section>
+      </div>
 
-    </main>
+    </section>
 
-    <!-- =====================
+    <!-- =========================
          COMPOSER
-         ===================== -->
+    ========================== -->
 
     <div class="composer-wrap">
 
@@ -846,45 +1226,105 @@
 
         <div class="composer-box">
 
-          <button
-            class="composer-button"
-            type="button"
-            data-action="upload"
-            title="Upload file"
-          >
-            ＋
-          </button>
+          <div class="input-row">
 
-          <textarea
-            id="message-input"
-            name="message"
-            rows="1"
-            placeholder="Ask anything about your code..."
-            autocomplete="off"
-            spellcheck="false"
-          ></textarea>
+            <button
+              class="icon-btn"
+              data-action="upload"
+              title="Attach"
+            >+</button>
 
-          <button
-            class="composer-button"
-            id="send-button"
-            type="button"
-            data-action="send"
-            title="Send"
-          >
-            ↑
-          </button>
+            <textarea
+              id="message-input"
+              rows="1"
+              placeholder="Ask OPENCODELO.10..."
+              autocomplete="off"
+              spellcheck="false"
+            ></textarea>
 
-        </div>
+            <button
+              class="send"
+              id="send-button"
+              data-action="send"
+              title="Send"
+            >↑</button>
 
-        <div class="composer-footer">
+          </div>
 
-          <span>
-            AI responses may contain mistakes.
-          </span>
+          <div class="composer-bar">
 
-          <span>
-            Enter to send · Shift + Enter for new line
-          </span>
+            <div class="composer-left">
+
+              <select
+                id="model-select"
+              >
+
+                <optgroup label="Google Gemini">
+
+                  <option value="gemini-3.7-flash">
+                    Gemini 3.7 Flash
+                  </option>
+
+                  <option value="gemini-3.6-flash">
+                    Gemini 3.6 Flash
+                  </option>
+
+                  <option value="gemini-3.5-flash">
+                    Gemini 3.5 Flash
+                  </option>
+
+                  <option value="gemini-3.5-flash-lite">
+                    Gemini 3.5 Flash-Lite
+                  </option>
+
+                  <option value="gemini-3.1-pro">
+                    Gemini 3.1 Pro
+                  </option>
+
+                </optgroup>
+
+                <optgroup label="Other Providers">
+
+                  <option value="openai-auto">
+                    OpenAI
+                  </option>
+
+                  <option value="deepseek-auto">
+                    DeepSeek
+                  </option>
+
+                  <option value="openrouter-free">
+                    OpenRouter
+                  </option>
+
+                </optgroup>
+
+              </select>
+
+              <button
+                class="tool"
+                data-action="providers"
+              >
+                Provider
+              </button>
+
+              <button
+                class="tool"
+                data-action="context"
+              >
+                Context
+              </button>
+
+            </div>
+
+            <span
+              class="ready"
+              id="model-status"
+            >
+              Ready
+            </span>
+
+          </div>
 
         </div>
 
@@ -892,151 +1332,1084 @@
 
     </div>
 
+  </main>
+
+</div>
+
+<!-- =========================
+     SETTINGS
+========================== -->
+
+<div
+  class="overlay"
+  id="settings-overlay"
+>
+
+  <div class="modal">
+
+    <div class="modal-head">
+
+      <div class="modal-title">
+        Settings
+      </div>
+
+      <button
+        class="modal-close"
+        data-close="settings-overlay"
+      >×</button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <div class="setting">
+
+        <label class="setting-label">
+          Workspace
+        </label>
+
+        <input
+          class="field"
+          id="workspace-input"
+          value="OPENCODELO.10"
+        >
+
+      </div>
+
+      <div class="setting">
+
+        <label class="setting-label">
+          Provider
+        </label>
+
+        <select
+          class="field"
+          id="provider-select"
+        >
+
+          <option value="gemini">
+            Google Gemini
+          </option>
+
+          <option value="openai">
+            OpenAI
+          </option>
+
+          <option value="deepseek">
+            DeepSeek
+          </option>
+
+          <option value="openrouter">
+            OpenRouter
+          </option>
+
+        </select>
+
+      </div>
+
+      <div class="setting">
+
+        <label class="setting-label">
+          API Key
+        </label>
+
+        <input
+          class="field"
+          id="api-key-input"
+          type="password"
+          autocomplete="off"
+          placeholder="Paste provider API key"
+        >
+
+      </div>
+
+      <div class="setting">
+
+        <label class="setting-label">
+          API Endpoint
+        </label>
+
+        <input
+          class="field"
+          id="endpoint-input"
+          placeholder="Optional custom endpoint"
+        >
+
+      </div>
+
+      <div class="actions">
+
+        <button
+          class="button"
+          data-action="test-connection"
+        >
+          Test Connection
+        </button>
+
+        <button
+          class="button primary"
+          data-action="save-settings"
+        >
+          Save
+        </button>
+
+      </div>
+
+    </div>
+
   </div>
 
-  <!-- =====================
-       APP SCRIPT
-       ===================== -->
+</div>
 
-  <script src="./app.js"></script>
+<!-- =========================
+     PROVIDERS
+========================== -->
 
-  <script>
-    /* =========================================
-       UI helpers for this index.html
-       ========================================= */
+<div
+  class="overlay"
+  id="providers-overlay"
+>
 
-    const messageInput =
-      document.getElementById("message-input");
+  <div class="modal">
 
-    const welcome =
-      document.getElementById("welcome");
+    <div class="modal-head">
 
-    const mobileMenuButton =
-      document.getElementById(
-        "mobile-menu-button"
+      <div class="modal-title">
+        AI Providers
+      </div>
+
+      <button
+        class="modal-close"
+        data-close="providers-overlay"
+      >×</button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <div class="provider">
+
+        <div class="provider-name">
+          Google Gemini
+        </div>
+
+        <div class="provider-info">
+          Gemini 3.x models and supported Google AI models.
+        </div>
+
+      </div>
+
+      <div class="provider">
+
+        <div class="provider-name">
+          OpenAI
+        </div>
+
+        <div class="provider-info">
+          Connect your own OpenAI API key.
+        </div>
+
+      </div>
+
+      <div class="provider">
+
+        <div class="provider-name">
+          DeepSeek
+        </div>
+
+        <div class="provider-info">
+          DeepSeek coding and reasoning models.
+        </div>
+
+      </div>
+
+      <div class="provider">
+
+        <div class="provider-name">
+          OpenRouter
+        </div>
+
+        <div class="provider-info">
+          Route compatible models through OpenRouter.
+        </div>
+
+      </div>
+
+      <div class="actions">
+
+        <button
+          class="button primary"
+          data-action="settings"
+        >
+          Configure
+        </button>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- =========================
+     WORKSPACE
+========================== -->
+
+<div
+  class="overlay"
+  id="workspace-overlay"
+>
+
+  <div class="modal">
+
+    <div class="modal-head">
+
+      <div
+        class="modal-title"
+        id="workspace-title"
+      >
+        Workspace
+      </div>
+
+      <button
+        class="modal-close"
+        data-close="workspace-overlay"
+      >×</button>
+
+    </div>
+
+    <div
+      class="modal-body"
+      id="workspace-body"
+    ></div>
+
+  </div>
+
+</div>
+
+<!-- =========================
+     SEARCH
+========================== -->
+
+<div
+  class="overlay"
+  id="search-overlay"
+>
+
+  <div class="modal">
+
+    <div class="modal-head">
+
+      <div class="modal-title">
+        Search
+      </div>
+
+      <button
+        class="modal-close"
+        data-close="search-overlay"
+      >×</button>
+
+    </div>
+
+    <div class="modal-body">
+
+      <input
+        class="field"
+        id="search-input"
+        placeholder="Search project..."
+        autocomplete="off"
+      >
+
+      <div
+        id="search-results"
+        style="
+          padding:25px 4px;
+          color:#505050;
+          font-size:10px;
+        "
+      >
+        Start typing to search.
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- =========================
+     TOASTS
+========================== -->
+
+<div
+  class="toasts"
+  id="toast-container"
+></div>
+
+<input
+  type="file"
+  id="file-input"
+  multiple
+  hidden
+>
+
+<script src="./app.js"></script>
+
+<script>
+(function(){
+
+  "use strict";
+
+  const $ = s =>
+    document.querySelector(s);
+
+  const $$ = s =>
+    [...document.querySelectorAll(s)];
+
+  const input =
+    $("#message-input");
+
+  const welcome =
+    $("#welcome");
+
+  const fileInput =
+    $("#file-input");
+
+  function toast(text){
+
+    const box =
+      $("#toast-container");
+
+    if(!box) return;
+
+    const el =
+      document.createElement("div");
+
+    el.className = "toast";
+    el.textContent = text;
+
+    box.appendChild(el);
+
+    setTimeout(
+      () => el.remove(),
+      3000
+    );
+  }
+
+  window.LoloUI = {
+
+    toast,
+
+    open(id){
+      $( "#" + id )
+        ?.classList.add("open");
+    },
+
+    close(id){
+      $( "#" + id )
+        ?.classList.remove("open");
+    },
+
+    addMessage
+  };
+
+  /* =========================
+     ACTION ROUTER
+  ========================== */
+
+  $$("[data-action]").forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const action =
+            button.dataset.action;
+
+          if(
+            window.OpenCodeLolo &&
+            typeof window.OpenCodeLolo[action]
+              === "function"
+          ){
+
+            window.OpenCodeLolo[action]();
+            return;
+          }
+
+          switch(action){
+
+            case "new-chat":
+
+              input.value = "";
+
+              input.style.height =
+                "auto";
+
+              welcome.style.display =
+                "";
+
+              $("#top-title")
+                .textContent =
+                "New Chat";
+
+              toast("New chat");
+
+              break;
+
+            case "send":
+
+              sendMessage();
+
+              break;
+
+            case "upload":
+
+              fileInput.click();
+
+              break;
+
+            case "settings":
+
+              closeAll();
+
+              $("#settings-overlay")
+                .classList.add("open");
+
+              break;
+
+            case "providers":
+
+              closeAll();
+
+              $("#providers-overlay")
+                .classList.add("open");
+
+              break;
+
+            case "search":
+
+              closeAll();
+
+              $("#search-overlay")
+                .classList.add("open");
+
+              setTimeout(
+                () => $("#search-input")?.focus(),
+                30
+              );
+
+              break;
+
+            case "history":
+
+              workspace(
+                "History",
+                "Your previous conversations will appear here."
+              );
+
+              break;
+
+            case "context":
+
+              workspace(
+                "Context",
+                "Project context manager."
+              );
+
+              break;
+
+            case "help":
+
+              workspace(
+                "Help",
+                "Use Chat for AI coding, Files for project files, Editor for code, Terminal for commands, and Settings for provider configuration."
+              );
+
+              break;
+
+            case "test-connection":
+
+              if(
+                window.OpenCodeLolo &&
+                typeof window.OpenCodeLolo.testConnection
+                  === "function"
+              ){
+
+                window.OpenCodeLolo.testConnection();
+
+              }else{
+
+                toast(
+                  "Provider handler belum tersedia di app.js."
+                );
+
+              }
+
+              break;
+
+            case "save-settings":
+
+              saveSettings();
+
+              break;
+
+            default:
+
+              toast(
+                "Action belum terhubung."
+              );
+          }
+        }
+      );
+    }
+  );
+
+  /* =========================
+     VIEW ROUTER
+  ========================== */
+
+  $$("[data-view]").forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          const view =
+            button.dataset.view;
+
+          if(
+            window.OpenCodeLolo &&
+            typeof window.OpenCodeLolo.openView
+              === "function"
+          ){
+
+            window.OpenCodeLolo
+              .openView(view);
+
+            return;
+          }
+
+          if(view === "chat"){
+
+            toast("Chat");
+
+            return;
+          }
+
+          workspace(
+            view.charAt(0).toUpperCase() +
+              view.slice(1),
+            view === "terminal"
+              ? "Terminal membutuhkan backend execution."
+              : view === "files"
+              ? "Files workspace membutuhkan file API."
+              : view === "editor"
+              ? "Editor workspace siap dihubungkan."
+              : "Workspace siap dihubungkan."
+          );
+        }
+      );
+    }
+  );
+
+  /* =========================
+     SUGGESTIONS
+  ========================== */
+
+  $$("[data-suggestion]").forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          input.value =
+            button.dataset.suggestion;
+
+          input.focus();
+
+          input.dispatchEvent(
+            new Event("input")
+          );
+        }
+      );
+    }
+  );
+
+  /* =========================
+     INPUT
+  ========================== */
+
+  input?.addEventListener(
+    "input",
+    () => {
+
+      input.style.height =
+        "auto";
+
+      input.style.height =
+        Math.min(
+          input.scrollHeight,
+          180
+        ) + "px";
+
+      if(welcome){
+
+        welcome.style.display =
+          input.value.trim()
+            ? "none"
+            : "";
+      }
+    }
+  );
+
+  input?.addEventListener(
+    "keydown",
+    event => {
+
+      if(
+        event.key === "Enter" &&
+        !event.shiftKey &&
+        !event.isComposing
+      ){
+
+        event.preventDefault();
+
+        sendMessage();
+      }
+    }
+  );
+
+  /* =========================
+     SEND
+  ========================== */
+
+  function sendMessage(){
+
+    const text =
+      input.value.trim();
+
+    if(!text) return;
+
+    if(
+      window.OpenCodeLolo &&
+      typeof window.OpenCodeLolo.sendMessage
+        === "function"
+    ){
+
+      window.OpenCodeLolo
+        .sendMessage(text);
+
+      input.value = "";
+      input.style.height = "auto";
+
+      return;
+    }
+
+    addMessage(
+      "user",
+      text
+    );
+
+    input.value = "";
+    input.style.height = "auto";
+
+    toast(
+      "Hubungkan sendMessage() di app.js."
+    );
+  }
+
+  /* =========================
+     MESSAGE
+  ========================== */
+
+  function addMessage(
+    role,
+    content
+  ){
+
+    const container =
+      $("#messages");
+
+    if(!container) return;
+
+    if(welcome)
+      welcome.style.display =
+        "none";
+
+    const article =
+      document.createElement("article");
+
+    article.className =
+      "message " +
+      (role === "user"
+        ? "user"
+        : "assistant");
+
+    const head =
+      document.createElement("div");
+
+    head.className =
+      "message-head";
+
+    const avatar =
+      document.createElement("div");
+
+    avatar.className =
+      "avatar";
+
+    avatar.textContent =
+      role === "user"
+        ? "U"
+        : "AI";
+
+    const roleText =
+      document.createElement("span");
+
+    roleText.className =
+      "role";
+
+    roleText.textContent =
+      role === "user"
+        ? "You"
+        : "Assistant";
+
+    head.append(
+      avatar,
+      roleText
+    );
+
+    const body =
+      document.createElement("div");
+
+    body.className =
+      "message-body";
+
+    body.textContent =
+      content;
+
+    article.append(
+      head,
+      body
+    );
+
+    container.appendChild(
+      article
+    );
+
+    const chat =
+      $("#chat-view");
+
+    chat.scrollTop =
+      chat.scrollHeight;
+  }
+
+  /* =========================
+     SETTINGS
+  ========================== */
+
+  function saveSettings(){
+
+    const settings = {
+
+      workspace:
+        $("#workspace-input")
+          ?.value.trim()
+        || "OPENCODELO.10",
+
+      provider:
+        $("#provider-select")
+          ?.value
+        || "gemini",
+
+      apiKey:
+        $("#api-key-input")
+          ?.value.trim()
+        || "",
+
+      endpoint:
+        $("#endpoint-input")
+          ?.value.trim()
+        || ""
+    };
+
+    try{
+
+      localStorage.setItem(
+        "opencodelo.settings",
+        JSON.stringify(settings)
       );
 
-    /*
-      Mobile sidebar
-    */
+    }catch(e){}
 
-    mobileMenuButton?.addEventListener(
+    $("#workspace-input")
+      .value =
+      settings.workspace;
+
+    $(".brand")
+      .innerHTML =
+      "OPENCODELO<span>.10</span>";
+
+    toast(
+      "Settings saved"
+    );
+
+    $("#settings-overlay")
+      .classList.remove("open");
+
+    window.dispatchEvent(
+      new CustomEvent(
+        "lolo:settings-changed",
+        {
+          detail:settings
+        }
+      )
+    );
+  }
+
+  /* =========================
+     WORKSPACE
+  ========================== */
+
+  function workspace(
+    title,
+    text
+  ){
+
+    $("#workspace-title")
+      .textContent =
+      title;
+
+    const body =
+      $("#workspace-body");
+
+    body.innerHTML = "";
+
+    const div =
+      document.createElement("div");
+
+    div.style.cssText =
+      "padding:20px 5px;color:#555;font-size:10px;line-height:1.7;";
+
+    div.textContent =
+      text;
+
+    body.appendChild(div);
+
+    closeAll();
+
+    $("#workspace-overlay")
+      .classList.add("open");
+  }
+
+  /* =========================
+     CLOSE
+  ========================== */
+
+  $$("[data-close]").forEach(
+    button => {
+
+      button.addEventListener(
+        "click",
+        () => {
+
+          $("#" + button.dataset.close)
+            ?.classList.remove("open");
+        }
+      );
+    }
+  );
+
+  $$(".overlay").forEach(
+    overlay => {
+
+      overlay.addEventListener(
+        "click",
+        event => {
+
+          if(
+            event.target === overlay
+          ){
+
+            overlay.classList.remove(
+              "open"
+            );
+          }
+        }
+      );
+    }
+  );
+
+  function closeAll(){
+
+    $$(".overlay.open")
+      .forEach(
+        x =>
+          x.classList.remove("open")
+      );
+  }
+
+  /* =========================
+     FILES
+  ========================== */
+
+  fileInput?.addEventListener(
+    "change",
+    () => {
+
+      const selected =
+        [...fileInput.files];
+
+      if(!selected.length)
+        return;
+
+      toast(
+        selected.length +
+        " file selected"
+      );
+
+      window.dispatchEvent(
+        new CustomEvent(
+          "lolo:files-selected",
+          {
+            detail:{
+              files:selected
+            }
+          }
+        )
+      );
+    }
+  );
+
+  /* =========================
+     SEARCH
+  ========================== */
+
+  $("#search-input")
+    ?.addEventListener(
+      "input",
+      event => {
+
+        const value =
+          event.target.value.trim();
+
+        $("#search-results")
+          .textContent =
+          value
+            ? "Searching: " + value
+            : "Start typing to search.";
+      }
+    );
+
+  /* =========================
+     MOBILE
+  ========================== */
+
+  $("#mobile-menu")
+    ?.addEventListener(
       "click",
       () => {
-        document.body.classList.toggle(
-          "sidebar-open"
-        );
+
+        document.body
+          .classList.toggle(
+            "sidebar-open"
+          );
       }
     );
 
-    /*
-      Close mobile sidebar after
-      clicking navigation.
-    */
+  /* =========================
+     SHORTCUTS
+  ========================== */
 
-    document
-      .querySelectorAll(
-        ".sidebar [data-action]"
-      )
-      .forEach((button) => {
-        button.addEventListener(
-          "click",
-          () => {
-            document.body.classList.remove(
-              "sidebar-open"
-            );
-          }
-        );
-      });
+  document.addEventListener(
+    "keydown",
+    event => {
 
-    /*
-      Suggestion buttons
-    */
+      if(
+        (event.ctrlKey ||
+         event.metaKey) &&
+        event.key.toLowerCase() === "n"
+      ){
 
-    document
-      .querySelectorAll(
-        "[data-suggestion]"
-      )
-      .forEach((button) => {
-        button.addEventListener(
-          "click",
-          () => {
-            messageInput.value =
-              button.dataset.suggestion;
+        event.preventDefault();
 
-            messageInput.focus();
-
-            messageInput.dispatchEvent(
-              new Event("input")
-            );
-          }
-        );
-      });
-
-    /*
-      Auto resize textarea
-    */
-
-    messageInput?.addEventListener(
-      "input",
-      () => {
-        messageInput.style.height =
-          "auto";
-
-        messageInput.style.height =
-          Math.min(
-            messageInput.scrollHeight,
-            180
-          ) + "px";
-
-        if (welcome) {
-          welcome.style.display =
-            messageInput.value.trim()
-              ? "none"
-              : "";
-        }
+        $('[data-action="new-chat"]')
+          ?.click();
       }
-    );
 
-    /*
-      Ctrl/Cmd + K = search
-    */
+      if(
+        (event.ctrlKey ||
+         event.metaKey) &&
+        event.key.toLowerCase() === "k"
+      ){
 
-    document.addEventListener(
-      "keydown",
-      (event) => {
-        if (
-          (event.ctrlKey ||
-            event.metaKey) &&
-          event.key.toLowerCase() === "k"
-        ) {
-          event.preventDefault();
+        event.preventDefault();
 
-          window.OpenCodeLolo?.showSearch?.();
-        }
+        $('[data-action="search"]')
+          ?.click();
       }
-    );
 
-    /*
-      Ctrl/Cmd + Shift + P = settings
-    */
+      if(event.key === "Escape"){
 
-    document.addEventListener(
-      "keydown",
-      (event) => {
-        if (
-          (event.ctrlKey ||
-            event.metaKey) &&
-          event.shiftKey &&
-          event.key.toLowerCase() === "p"
-        ) {
-          event.preventDefault();
+        closeAll();
 
-          window.OpenCodeLolo?.showSettings?.();
-        }
+        document.body
+          .classList.remove(
+            "sidebar-open"
+          );
       }
-    );
-  </script>
+    }
+  );
+
+  /* =========================
+     LOAD SETTINGS
+  ========================== */
+
+  try{
+
+    const saved =
+      JSON.parse(
+        localStorage.getItem(
+          "opencodelo.settings"
+        ) || "null"
+      );
+
+    if(saved){
+
+      if(saved.workspace)
+        $("#workspace-input")
+          .value =
+          saved.workspace;
+
+      if(saved.provider)
+        $("#provider-select")
+          .value =
+          saved.provider;
+
+      if(saved.endpoint)
+        $("#endpoint-input")
+          .value =
+          saved.endpoint;
+    }
+
+  }catch(e){}
+
+  /* =========================
+     APP READY
+  ========================== */
+
+  window.dispatchEvent(
+    new CustomEvent(
+      "lolo:ui-ready"
+    )
+  );
+
+})();
+</script>
 
 </body>
 </html>
+```
