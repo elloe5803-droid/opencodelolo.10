@@ -1,118 +1,289 @@
+// api/chat.js
+
 export default async function handler(req, res) {
-  // Hanya menerima POST
   if (req.method !== "POST") {
     return res.status(405).json({
-      error: "Method Not Allowed"
+      ok: false,
+      error: "Method Not Allowed",
     });
   }
 
   try {
-    // Ambil pesan dari browser
-    const message = req.body?.message;
+    const body = req.body || {};
 
-    if (
-      typeof message !== "string" ||
-      message.trim() === ""
-    ) {
+    const message =
+      typeof body.message === "string"
+        ? body.message.trim()
+        : "";
+
+    const provider =
+      typeof body.provider === "string"
+        ? body.provider.trim().toLowerCase()
+        : "openai";
+
+    const model =
+      typeof body.model === "string"
+        ? body.model.trim()
+        : "";
+
+    const apiKey =
+      typeof body.apiKey === "string"
+        ? body.apiKey.trim()
+        : "";
+
+    const customEndpoint =
+      typeof body.endpoint === "string"
+        ? body.endpoint.trim()
+        : "";
+
+    if (!message) {
       return res.status(400).json({
-        error: "Pesan kosong"
+        ok: false,
+        error: "Pesan kosong.",
       });
     }
 
-    // Ambil API key dari Vercel
-    let apiKey = process.env.OPENROUTER_API_KEY;
-
     if (!apiKey) {
-      return res.status(500).json({
+      return res.status(400).json({
+        ok: false,
         error:
-          "OPENROUTER_API_KEY belum tersedia di Vercel"
+          "API Key belum diisi. Buka Settings → API Key.",
       });
     }
 
-    // Bersihkan jika value Vercel tidak sengaja diberi
-    // tanda kutip atau prefix Bearer
-    apiKey = apiKey
-      .trim()
-      .replace(/^Bearer\s+/i, "")
-      .replace(/^["']|["']$/g, "");
-
-    if (!apiKey) {
-      return res.status(500).json({
-        error: "OPENROUTER_API_KEY kosong"
+    if (!model) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Model belum dipilih. Buka Settings → Model.",
       });
     }
 
-    // Kirim ke OpenRouter
-    const response = await fetch(
-      "https://openrouter.ai/api/v1/chat/completions",
-      {
-        method: "POST",
+    /*
+     * Endpoint default.
+     *
+     * User tetap bisa memasukkan endpoint sendiri
+     * dari Settings jika provider menggunakan endpoint
+     * OpenAI-compatible.
+     */
+    let endpoint = customEndpoint;
 
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${apiKey}`,
-          "HTTP-Referer":
-            "https://opencodelolo-10.vercel.app",
-          "X-Title": "OpenCode Lolo"
-        },
-
-        body: JSON.stringify({
-          model: "openrouter/free",
-
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are an expert AI coding assistant. Help the user create, debug, explain, and improve websites and code. Give practical and accurate answers."
-            },
-            {
-              role: "user",
-              content: message.trim()
-            }
-          ]
-        })
+    if (!endpoint) {
+      if (provider === "openai") {
+        endpoint =
+          "https://api.openai.com/v1/chat/completions";
+      } else if (provider === "openrouter") {
+        endpoint =
+          "https://openrouter.ai/api/v1/chat/completions";
+      } else if (provider === "groq") {
+        endpoint =
+          "https://api.groq.com/openai/v1/chat/completions";
+      } else if (provider === "deepseek") {
+        endpoint =
+          "https://api.deepseek.com/chat/completions";
+      } else if (provider === "mistral") {
+        endpoint =
+          "https://api.mistral.ai/v1/chat/completions";
+      } else if (provider === "together") {
+        endpoint =
+          "https://api.together.xyz/v1/chat/completions";
+      } else if (provider === "fireworks") {
+        endpoint =
+          "https://api.fireworks.ai/inference/v1/chat/completions";
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error:
+            "Provider tidak dikenal. Isi Endpoint secara manual di Settings.",
+        });
       }
-    );
+    }
 
-    // Baca response
-    const data = await response.json();
+    /*
+     * Bersihkan endpoint supaya tidak terjadi:
+     * https://.../chat/completions/chat/completions
+     */
+    endpoint = endpoint.replace(/\/+$/, "");
 
-    // Kalau OpenRouter mengembalikan error
+    /*
+     * Kalau user memasukkan base URL OpenAI-compatible,
+     * otomatis tambahkan /chat/completions.
+     */
+    const looksLikeChatEndpoint =
+      endpoint.endsWith("/chat/completions");
+
+    if (!looksLikeChatEndpoint) {
+      if (
+        endpoint.endsWith("/v1") ||
+        endpoint.endsWith("/api/v1")
+      ) {
+        endpoint += "/chat/completions";
+      }
+    }
+
+    /*
+     * Header umum OpenAI-compatible API.
+     */
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`,
+    };
+
+    /*
+     * Header tambahan OpenRouter.
+     */
+    if (provider === "openrouter") {
+      headers["HTTP-Referer"] =
+        "https://opencodelolo-10.vercel.app";
+
+      headers["X-Title"] = "OpenCodeLolo.10";
+    }
+
+    const payload = {
+      model,
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are OpenCodeLolo.10, an expert AI coding assistant. Help users build, debug, explain, refactor, and improve software. Give practical, accurate, production-ready answers.",
+        },
+        {
+          role: "user",
+          content: message,
+        },
+      ],
+      stream: false,
+    };
+
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    const rawText = await response.text();
+
+    let data;
+
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      data = {
+        raw: rawText,
+      };
+    }
+
     if (!response.ok) {
       console.error(
-        "OpenRouter error:",
+        "AI PROVIDER ERROR:",
         response.status,
         data
       );
 
+      const providerError =
+        data?.error?.message ||
+        data?.error?.detail ||
+        data?.message ||
+        data?.detail ||
+        data?.raw ||
+        `Provider mengembalikan HTTP ${response.status}`;
+
       return res.status(502).json({
-        error:
-          data?.error?.message ||
-          `OpenRouter error (${response.status})`
+        ok: false,
+        error: String(providerError),
+        status: response.status,
+        provider,
+        model,
       });
     }
 
-    // Ambil jawaban AI
-    const reply =
+    /*
+     * Format response yang umum dipakai:
+     *
+     * OpenAI
+     * OpenRouter
+     * Groq
+     * DeepSeek
+     * Mistral
+     * Together
+     * Fireworks
+     */
+    let reply =
       data?.choices?.[0]?.message?.content;
+
+    /*
+     * Beberapa provider bisa mengembalikan
+     * content sebagai array.
+     */
+    if (Array.isArray(reply)) {
+      reply = reply
+        .map((item) => {
+          if (typeof item === "string") {
+            return item;
+          }
+
+          return (
+            item?.text ||
+            item?.content ||
+            ""
+          );
+        })
+        .join("");
+    }
+
+    /*
+     * Fallback untuk response sederhana.
+     */
+    if (
+      !reply &&
+      typeof data?.output_text === "string"
+    ) {
+      reply = data.output_text;
+    }
+
+    if (
+      !reply &&
+      typeof data?.response === "string"
+    ) {
+      reply = data.response;
+    }
+
+    if (
+      !reply &&
+      typeof data?.text === "string"
+    ) {
+      reply = data.text;
+    }
 
     if (!reply) {
       console.error(
-        "Response OpenRouter tidak memiliki reply:",
-        data
+        "UNKNOWN AI RESPONSE:",
+        JSON.stringify(data)
       );
 
       return res.status(502).json({
+        ok: false,
         error:
-          "OpenRouter tidak mengembalikan jawaban AI"
+          "AI berhasil dihubungi tetapi format jawabannya tidak dikenali.",
+        provider,
+        model,
+        raw:
+          typeof data === "object"
+            ? JSON.stringify(data)
+            : String(data),
       });
     }
 
-    // Kirim jawaban ke frontend
     return res.status(200).json({
-      reply
-    });
+      ok: true,
+      reply: String(reply),
+      provider,
+      model,
 
+      usage: data?.usage || null,
+
+      id: data?.id || null,
+    });
   } catch (error) {
     console.error(
       "API CHAT ERROR:",
@@ -120,9 +291,10 @@ export default async function handler(req, res) {
     );
 
     return res.status(500).json({
+      ok: false,
       error:
         error?.message ||
-        "Terjadi kesalahan pada server"
+        "Terjadi kesalahan pada server.",
     });
   }
 }
