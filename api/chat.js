@@ -1,1209 +1,888 @@
 ```js
-(() => {
-  "use strict";
+// api/chat.js
+//
+// Universal AI proxy for Vercel.
+// Supports:
+// - Google Gemini
+// - OpenAI
+// - OpenRouter
+// - Groq
+// - DeepSeek
+// - Mistral
+// - Together
+// - Fireworks
+// - Any OpenAI-compatible endpoint
+//
+// Request:
+// POST /api/chat
+//
+// {
+//   "message": "Hello",
+//   "provider": "gemini",
+//   "model": "gemini-3.6-flash",
+//   "apiKey": "YOUR_KEY",
+//   "endpoint": ""
+// }
 
-  const $ = (id) => document.getElementById(id);
+export default async function handler(req, res) {
+  // ---------------------------------------------------------
+  // CORS
+  // ---------------------------------------------------------
 
-  /*
-   * =========================================================
-   * PROVIDERS
-   * =========================================================
-   */
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader(
+    "Access-Control-Allow-Methods",
+    "POST, OPTIONS"
+  );
+  res.setHeader(
+    "Access-Control-Allow-Headers",
+    "Content-Type, Authorization"
+  );
 
-  const PROVIDERS = {
-    openai: {
-      name: "OpenAI",
-      model: "gpt-4.1-mini",
-      endpoint: ""
-    },
-
-    openrouter: {
-      name: "OpenRouter",
-      model: "openrouter/free",
-      endpoint: ""
-    },
-
-    gemini: {
-      name: "Google Gemini",
-      model: "gemini-3.6-flash",
-      endpoint: ""
-    },
-
-    groq: {
-      name: "Groq",
-      model: "llama-3.3-70b-versatile",
-      endpoint: ""
-    },
-
-    deepseek: {
-      name: "DeepSeek",
-      model: "deepseek-chat",
-      endpoint: ""
-    },
-
-    mistral: {
-      name: "Mistral",
-      model: "mistral-small-latest",
-      endpoint: ""
-    },
-
-    custom: {
-      name: "Custom",
-      model: "",
-      endpoint: ""
-    }
-  };
-
-  /*
-   * =========================================================
-   * DEFAULT SETTINGS
-   * =========================================================
-   */
-
-  const DEFAULTS = {
-    provider: "openai",
-    model: "gpt-4.1-mini",
-    apiKey: "",
-    endpoint: "",
-    active: false
-  };
-
-  let settings = loadSettings();
-  let messages = [];
-
-  /*
-   * =========================================================
-   * MODEL NORMALIZATION
-   * =========================================================
-   */
-
-  function normalizeGeminiModel(model) {
-    let value = String(model || "").trim();
-
-    value = value.replace(/^models\//i, "");
-
-    return value;
+  if (req.method === "OPTIONS") {
+    return res.status(204).end();
   }
 
-  function normalizeModel(provider, model) {
-    const value = String(model || "").trim();
-
-    if (
-      provider === "gemini" ||
-      provider === "google" ||
-      provider === "google-gemini"
-    ) {
-      return normalizeGeminiModel(value);
-    }
-
-    return value;
-  }
-
-  /*
-   * =========================================================
-   * LOAD SETTINGS
-   * =========================================================
-   */
-
-  function loadSettings() {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("ocl_settings") || "{}"
-      );
-
-      const merged = {
-        ...DEFAULTS,
-        ...saved
-      };
-
-      /*
-       * Upgrade old Gemini configuration.
-       */
-
-      if (
-        merged.provider === "gemini" ||
-        merged.provider === "google" ||
-        merged.provider === "google-gemini"
-      ) {
-        const oldModel = String(
-          merged.model || ""
-        ).trim();
-
-        const normalized = normalizeGeminiModel(
-          oldModel
-        );
-
-        if (
-          !normalized ||
-          normalized === "gemini-2.5-flash" ||
-          normalized === "gemini-2.5-flash-latest"
-        ) {
-          merged.model = "gemini-3.6-flash";
-        } else {
-          merged.model = normalized;
-        }
-
-        /*
-         * Gemini endpoint should normally be empty.
-         * Backend generates the correct endpoint.
-         */
-        if (
-          merged.endpoint &&
-          merged.endpoint.includes(
-            "generativelanguage.googleapis.com"
-          )
-        ) {
-          merged.endpoint = "";
-        }
-      }
-
-      return merged;
-    } catch (error) {
-      console.error(
-        "LOAD SETTINGS ERROR:",
-        error
-      );
-
-      return {
-        ...DEFAULTS
-      };
-    }
-  }
-
-  /*
-   * =========================================================
-   * SAVE SETTINGS
-   * =========================================================
-   */
-
-  function persistSettings() {
-    try {
-      localStorage.setItem(
-        "ocl_settings",
-        JSON.stringify(settings)
-      );
-    } catch (error) {
-      console.error(
-        "SAVE SETTINGS ERROR:",
-        error
-      );
-    }
-  }
-
-  /*
-   * =========================================================
-   * SETTINGS UI
-   * =========================================================
-   */
-
-  function syncSettingsUI() {
-    if (!$("provider")) return;
-
-    $("provider").value =
-      settings.provider || "openai";
-
-    $("model").value =
-      settings.model || "";
-
-    $("apiKey").value =
-      settings.apiKey || "";
-
-    $("endpoint").value =
-      settings.endpoint || "";
-
-    updateQuickModel();
-    updateConnectionStatus();
-  }
-
-  function updateQuickModel() {
-    const select = $("modelQuick");
-
-    if (!select) return;
-
-    select.innerHTML = "";
-
-    const option =
-      document.createElement("option");
-
-    option.value =
-      settings.model || "";
-
-    option.textContent =
-      settings.model ||
-      "No model selected";
-
-    select.appendChild(option);
-  }
-
-  function updateConnectionStatus() {
-    const button =
-      $("saveSettings");
-
-    if (!button) return;
-
-    if (
-      settings.active &&
-      settings.apiKey &&
-      settings.model
-    ) {
-      button.textContent =
-        "Settings Saved · AI Active";
-    } else {
-      button.textContent =
-        "Save Settings";
-    }
-  }
-
-  /*
-   * =========================================================
-   * NAVIGATION
-   * =========================================================
-   */
-
-  function showView(name) {
-    document
-      .querySelectorAll(".view")
-      .forEach((view) => {
-        view.classList.remove("active");
-      });
-
-    const target =
-      $("view-" + name);
-
-    if (target) {
-      target.classList.add("active");
-    }
-
-    document
-      .querySelectorAll("[data-view]")
-      .forEach((button) => {
-        button.classList.toggle(
-          "active",
-          button.dataset.view === name
-        );
-      });
-
-    const title =
-      name.charAt(0).toUpperCase() +
-      name.slice(1);
-
-    if ($("viewTitle")) {
-      $("viewTitle").textContent =
-        title;
-    }
-  }
-
-  /*
-   * =========================================================
-   * CHAT
-   * =========================================================
-   */
-
-  function clearChat() {
-    messages = [];
-
-    const box =
-      $("messages");
-
-    if (!box) return;
-
-    box.innerHTML = `
-      <div class="messages-inner">
-        <div class="empty" id="empty">
-          <div class="empty-content">
-            <div class="empty-logo">O</div>
-
-            <h1>OpenCodeLolo.10</h1>
-
-            <p>
-              Your AI coding workspace.
-              Ask a question, build something,
-              or start a new project.
-            </p>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  function addMessage(role, text) {
-    const box =
-      $("messages");
-
-    if (!box) return null;
-
-    let inner =
-      box.querySelector(
-        ".messages-inner"
-      );
-
-    if (!inner) {
-      inner =
-        document.createElement("div");
-
-      inner.className =
-        "messages-inner";
-
-      box.appendChild(inner);
-    }
-
-    const empty =
-      inner.querySelector("#empty");
-
-    if (empty) {
-      empty.remove();
-    }
-
-    const element =
-      document.createElement("div");
-
-    element.className =
-      "msg " + role;
-
-    element.textContent =
-      text;
-
-    inner.appendChild(element);
-
-    box.scrollTop =
-      box.scrollHeight;
-
-    messages.push({
-      role,
-      content: text
+  if (req.method !== "POST") {
+    return res.status(405).json({
+      ok: false,
+      error: "Method Not Allowed. Use POST."
     });
-
-    return element;
   }
 
-  function addSystemNotice(text) {
-    addMessage(
-      "ai",
-      text
-    );
-  }
+  try {
+    // -------------------------------------------------------
+    // READ REQUEST
+    // -------------------------------------------------------
 
-  /*
-   * =========================================================
-   * SAVE SETTINGS
-   * =========================================================
-   */
+    const body =
+      typeof req.body === "object" && req.body !== null
+        ? req.body
+        : {};
 
-  function saveSettings() {
-    let provider =
-      $("provider")?.value ||
-      "openai";
+    const message =
+      typeof body.message === "string"
+        ? body.message.trim()
+        : "";
 
-    let model =
-      $("model")?.value.trim() ||
-      "";
+    const provider =
+      String(body.provider || "openai")
+        .trim()
+        .toLowerCase();
 
     const apiKey =
-      $("apiKey")?.value.trim() ||
-      "";
+      String(body.apiKey || "").trim();
+
+    let model =
+      String(body.model || "").trim();
 
     let endpoint =
-      $("endpoint")?.value.trim() ||
-      "";
+      String(body.endpoint || "").trim();
 
-    /*
-     * Normalize Gemini model immediately.
-     */
+    const test =
+      body.test === true;
 
-    model =
-      normalizeModel(
-        provider,
-        model
-      );
+    // -------------------------------------------------------
+    // VALIDATION
+    // -------------------------------------------------------
 
-    /*
-     * Gemini should use backend-generated
-     * GenerateContent endpoint.
-     */
+    if (!message) {
+      return res.status(400).json({
+        ok: false,
+        error: "Message kosong."
+      });
+    }
 
-    if (
+    if (!apiKey) {
+      return res.status(400).json({
+        ok: false,
+        error: "API Key belum diisi."
+      });
+    }
+
+    // -------------------------------------------------------
+    // PROVIDER ALIASES
+    // -------------------------------------------------------
+
+    const isGemini =
       provider === "gemini" ||
       provider === "google" ||
-      provider === "google-gemini"
-    ) {
-      endpoint = "";
+      provider === "google-gemini";
 
+    const isOpenRouter =
+      provider === "openrouter";
+
+    const isOpenAI =
+      provider === "openai";
+
+    const isGroq =
+      provider === "groq";
+
+    const isDeepSeek =
+      provider === "deepseek";
+
+    const isMistral =
+      provider === "mistral";
+
+    const isTogether =
+      provider === "together";
+
+    const isFireworks =
+      provider === "fireworks";
+
+    const isCustom =
+      provider === "custom";
+
+    // -------------------------------------------------------
+    // DEFAULT MODELS
+    // -------------------------------------------------------
+
+    if (!model) {
+      if (isGemini) {
+        model = "gemini-3.6-flash";
+      } else if (isOpenRouter) {
+        model = "openrouter/free";
+      } else if (isOpenAI) {
+        model = "gpt-4.1-mini";
+      } else if (isGroq) {
+        model = "llama-3.3-70b-versatile";
+      } else if (isDeepSeek) {
+        model = "deepseek-chat";
+      } else if (isMistral) {
+        model = "mistral-small-latest";
+      } else {
+        return res.status(400).json({
+          ok: false,
+          error: "Model belum diisi."
+        });
+      }
+    }
+
+    // -------------------------------------------------------
+    // NORMALIZE GEMINI MODEL
+    // -------------------------------------------------------
+
+    if (isGemini) {
+      model = model
+        .replace(/^models\//i, "")
+        .trim();
+
+      // Old model migration
       if (
         !model ||
         model === "gemini-2.5-flash" ||
         model === "gemini-2.5-flash-latest"
       ) {
-        model =
-          "gemini-3.6-flash";
+        model = "gemini-3.6-flash";
       }
     }
 
-    settings = {
-      ...settings,
-      provider,
+    // -------------------------------------------------------
+    // GEMINI
+    // -------------------------------------------------------
+
+    if (isGemini) {
+      return await handleGemini({
+        req,
+        res,
+        message,
+        apiKey,
+        model,
+        endpoint,
+        test
+      });
+    }
+
+    // -------------------------------------------------------
+    // OPENAI-COMPATIBLE PROVIDERS
+    // -------------------------------------------------------
+
+    let baseEndpoint = endpoint;
+
+    if (!baseEndpoint) {
+      if (isOpenAI) {
+        baseEndpoint =
+          "https://api.openai.com/v1/chat/completions";
+      } else if (isOpenRouter) {
+        baseEndpoint =
+          "https://openrouter.ai/api/v1/chat/completions";
+      } else if (isGroq) {
+        baseEndpoint =
+          "https://api.groq.com/openai/v1/chat/completions";
+      } else if (isDeepSeek) {
+        baseEndpoint =
+          "https://api.deepseek.com/chat/completions";
+      } else if (isMistral) {
+        baseEndpoint =
+          "https://api.mistral.ai/v1/chat/completions";
+      } else if (isTogether) {
+        baseEndpoint =
+          "https://api.together.xyz/v1/chat/completions";
+      } else if (isFireworks) {
+        baseEndpoint =
+          "https://api.fireworks.ai/inference/v1/chat/completions";
+      }
+    }
+
+    if (
+      !baseEndpoint &&
+      !isCustom
+    ) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          `Endpoint untuk provider "${provider}" belum tersedia.`
+      });
+    }
+
+    if (isCustom && !baseEndpoint) {
+      return res.status(400).json({
+        ok: false,
+        error:
+          "Custom provider membutuhkan Endpoint."
+      });
+    }
+
+    // -------------------------------------------------------
+    // NORMALIZE OPENAI-COMPATIBLE ENDPOINT
+    // -------------------------------------------------------
+
+    baseEndpoint =
+      normalizeChatEndpoint(baseEndpoint);
+
+    // -------------------------------------------------------
+    // REQUEST BODY
+    // -------------------------------------------------------
+
+    const payload = {
       model,
-      apiKey,
-      endpoint,
-      active:
-        Boolean(apiKey && model)
+      messages: [
+        {
+          role: "user",
+          content: message
+        }
+      ],
+      temperature: 0.7
     };
 
-    persistSettings();
-    syncSettingsUI();
+    // -------------------------------------------------------
+    // HEADERS
+    // -------------------------------------------------------
 
-    showView("chat");
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${apiKey}`
+    };
 
-    if (settings.active) {
-      addSystemNotice(
-        `AI aktif: ${
-          PROVIDERS[provider]?.name ||
-          provider
-        } / ${model}`
-      );
-    } else {
-      addSystemNotice(
-        "API belum aktif. Masukkan API Key dan Model di Settings."
-      );
+    // OpenRouter metadata
+    if (isOpenRouter) {
+      headers["HTTP-Referer"] =
+        getRequestOrigin(req);
+
+      headers["X-Title"] =
+        "OpenCodeLolo.10";
     }
-  }
 
-  /*
-   * =========================================================
-   * PROVIDER
-   * =========================================================
-   */
+    // -------------------------------------------------------
+    // CALL PROVIDER
+    // -------------------------------------------------------
 
-  function setProvider(provider) {
-    const config =
-      PROVIDERS[provider];
-
-    if (!config) return;
-
-    const previousProvider =
-      settings.provider;
-
-    settings.provider =
-      provider;
-
-    const current =
-      $("model")
-        ?.value
-        .trim() || "";
-
-    const previousModel =
-      PROVIDERS[
-        previousProvider
-      ]?.model || "";
-
-    if (
-      !current ||
-      current === previousModel
-    ) {
-      if ($("model")) {
-        $("model").value =
-          config.model;
+    const response = await fetch(
+      baseEndpoint,
+      {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload)
       }
-    }
+    );
 
-    if (
-      provider === "gemini" ||
-      provider === "google" ||
-      provider === "google-gemini"
-    ) {
-      if ($("model")) {
-        $("model").value =
-          normalizeGeminiModel(
-            $("model").value
-          ) || "gemini-3.6-flash";
-      }
+    const data =
+      await safeJson(response);
 
-      if ($("endpoint")) {
-        $("endpoint").value = "";
-      }
-    } else if (
-      $("endpoint") &&
-      config.endpoint
-    ) {
-      $("endpoint").value =
-        config.endpoint;
-    }
-  }
+    // -------------------------------------------------------
+    // PROVIDER ERROR
+    // -------------------------------------------------------
 
-  /*
-   * =========================================================
-   * TEST CONNECTION
-   * =========================================================
-   */
+    if (!response.ok) {
+      const providerMessage =
+        extractProviderError(data);
 
-  async function testConnection() {
-    const apiKey =
-      $("apiKey")?.value.trim() ||
-      settings.apiKey;
-
-    const provider =
-      $("provider")?.value ||
-      settings.provider;
-
-    let model =
-      $("model")?.value.trim() ||
-      settings.model;
-
-    let endpoint =
-      $("endpoint")?.value.trim() ||
-      settings.endpoint;
-
-    model =
-      normalizeModel(
-        provider,
-        model
-      );
-
-    if (!apiKey) {
-      showView("settings");
-
-      alert(
-        "Masukkan API Key terlebih dahulu."
-      );
-
-      return;
-    }
-
-    if (!model) {
-      showView("settings");
-
-      alert(
-        "Masukkan Model terlebih dahulu."
-      );
-
-      return;
-    }
-
-    if (
-      provider === "gemini" ||
-      provider === "google" ||
-      provider === "google-gemini"
-    ) {
-      model =
-        normalizeGeminiModel(
-          model
-        );
-
-      endpoint = "";
-    }
-
-    const button =
-      $("saveSettings");
-
-    if (button) {
-      button.disabled = true;
-      button.textContent =
-        "Testing…";
-    }
-
-    try {
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              message:
-                "Reply with exactly: CONNECTION_OK",
-
-              provider,
-
-              model,
-
-              apiKey,
-
-              endpoint,
-
-              test: true
-            })
-          }
-        );
-
-      const data =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (
-        !response.ok ||
-        data.ok === false
-      ) {
-        throw new Error(
-          data.error ||
-          `Connection failed (${response.status})`
-        );
-      }
-
-      settings = {
-        ...settings,
+      return res.status(
+        normalizeStatus(response.status)
+      ).json({
+        ok: false,
+        error:
+          `${provider} API error (${response.status}): ${providerMessage}`,
         provider,
         model,
-        apiKey,
-        endpoint,
-        active: true
-      };
-
-      persistSettings();
-      syncSettingsUI();
-
-      alert(
-        `Connection berhasil.\n\n${
-          PROVIDERS[provider]?.name ||
-          provider
-        } · ${model}`
-      );
-    } catch (error) {
-      console.error(
-        "CONNECTION TEST ERROR:",
-        error
-      );
-
-      alert(
-        "Connection gagal:\n\n" +
-        (
-          error.message ||
-          "Unknown error"
-        )
-      );
-    } finally {
-      if (button) {
-        button.disabled =
-          false;
-
-        updateConnectionStatus();
-      }
+        status: response.status,
+        details: data
+      });
     }
-  }
 
-  /*
-   * =========================================================
-   * SEND MESSAGE
-   * =========================================================
-   */
+    // -------------------------------------------------------
+    // EXTRACT RESPONSE
+    // -------------------------------------------------------
 
-  async function sendMessage() {
-    const input =
-      $("prompt");
+    const reply =
+      extractOpenAICompatibleText(data);
 
-    if (!input) return;
-
-    const message =
-      input.value.trim();
-
-    if (!message) return;
-
-    const provider =
-      settings.provider ||
-      "openai";
-
-    let model =
-      settings.model ||
-      "";
-
-    let endpoint =
-      settings.endpoint ||
-      "";
-
-    model =
-      normalizeModel(
+    if (!reply) {
+      return res.status(502).json({
+        ok: false,
+        error:
+          "Provider berhasil merespons, tetapi tidak ada teks jawaban yang ditemukan.",
         provider,
-        model
-      );
-
-    if (!settings.apiKey) {
-      showView("settings");
-
-      alert(
-        "AI belum aktif.\n\nMasukkan API Key di Settings lalu Save Settings."
-      );
-
-      return;
+        model,
+        raw: data
+      });
     }
 
-    if (!model) {
-      showView("settings");
+    return res.status(200).json({
+      ok: true,
+      reply,
+      provider,
+      model,
+      test,
+      usage: data?.usage || null,
+      id: data?.id || null
+    });
 
-      alert(
-        "Model belum dipilih."
-      );
+  } catch (error) {
+    console.error(
+      "API CHAT ERROR:",
+      error
+    );
 
-      return;
-    }
+    return res.status(500).json({
+      ok: false,
+      error:
+        error?.message ||
+        "Internal Server Error",
+      type:
+        error?.name ||
+        "Error"
+    });
+  }
+}
 
-    /*
-     * Gemini endpoint is generated
-     * by backend.
-     */
+
+// ============================================================
+// GEMINI HANDLER
+// ============================================================
+
+async function handleGemini({
+  req,
+  res,
+  message,
+  apiKey,
+  model,
+  endpoint,
+  test
+}) {
+  try {
+    // --------------------------------------------------------
+    // Normalize model
+    // --------------------------------------------------------
+
+    model = String(model || "")
+      .replace(/^models\//i, "")
+      .trim();
 
     if (
-      provider === "gemini" ||
-      provider === "google" ||
-      provider === "google-gemini"
+      !model ||
+      model === "gemini-2.5-flash" ||
+      model === "gemini-2.5-flash-latest"
     ) {
-      model =
-        normalizeGeminiModel(
+      model = "gemini-3.6-flash";
+    }
+
+    // --------------------------------------------------------
+    // Default Gemini endpoint
+    // --------------------------------------------------------
+
+    let url =
+      endpoint ||
+      `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(
+        model
+      )}:generateContent`;
+
+    // --------------------------------------------------------
+    // If user entered a generic Google endpoint,
+    // convert it into GenerateContent endpoint.
+    // --------------------------------------------------------
+
+    if (
+      url.includes(
+        "generativelanguage.googleapis.com"
+      )
+    ) {
+      url =
+        normalizeGeminiEndpoint(
+          url,
           model
         );
-
-      endpoint = "";
     }
 
-    settings.active = true;
-    settings.model = model;
-    settings.endpoint = endpoint;
+    // --------------------------------------------------------
+    // Gemini request
+    // --------------------------------------------------------
 
-    persistSettings();
-
-    input.value = "";
-
-    input.style.height =
-      "auto";
-
-    addMessage(
-      "user",
-      message
-    );
-
-    const pending =
-      addMessage(
-        "ai",
-        "Thinking…"
-      );
-
-    try {
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              message,
-
-              provider,
-
-              model,
-
-              apiKey:
-                settings.apiKey,
-
-              endpoint
-            })
-          }
-        );
-
-      const data =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          `Server error (${response.status})`
-        );
-      }
-
-      if (
-        data.ok === false
-      ) {
-        throw new Error(
-          data.error ||
-          "AI request ditolak."
-        );
-      }
-
-      const reply =
-        data.reply ||
-        data.message ||
-        data.content;
-
-      if (!reply) {
-        throw new Error(
-          "Backend tidak mengembalikan reply."
-        );
-      }
-
-      if (pending) {
-        pending.textContent =
-          String(reply);
-      }
-    } catch (error) {
-      console.error(
-        "SEND MESSAGE ERROR:",
-        error
-      );
-
-      if (pending) {
-        pending.textContent =
-          "❌ " +
-          (
-            error.message ||
-            "Terjadi kesalahan saat menghubungi AI."
-          );
-      }
-    }
-  }
-
-  /*
-   * =========================================================
-   * NAVIGATION EVENTS
-   * =========================================================
-   */
-
-  function setupNavigation() {
-    document
-      .querySelectorAll(
-        "[data-view]"
-      )
-      .forEach((button) => {
-        button.addEventListener(
-          "click",
-          () => {
-            showView(
-              button.dataset.view
-            );
-          }
-        );
-      });
-  }
-
-  /*
-   * =========================================================
-   * CHAT EVENTS
-   * =========================================================
-   */
-
-  function setupChat() {
-    const send =
-      $("send");
-
-    const input =
-      $("prompt");
-
-    if (send) {
-      send.addEventListener(
-        "click",
-        sendMessage
-      );
-    }
-
-    if (input) {
-      input.addEventListener(
-        "keydown",
-        (event) => {
-          if (
-            event.key === "Enter" &&
-            !event.shiftKey
-          ) {
-            event.preventDefault();
-
-            sendMessage();
-          }
-        }
-      );
-
-      input.addEventListener(
-        "input",
-        () => {
-          input.style.height =
-            "auto";
-
-          input.style.height =
-            Math.min(
-              input.scrollHeight,
-              220
-            ) + "px";
-        }
-      );
-    }
-  }
-
-  /*
-   * =========================================================
-   * NEW CHAT
-   * =========================================================
-   */
-
-  function setupNewChat() {
-    const button =
-      $("newChat");
-
-    if (!button) return;
-
-    button.addEventListener(
-      "click",
-      () => {
-        clearChat();
-
-        showView("chat");
-
-        $("prompt")?.focus();
-      }
-    );
-  }
-
-  /*
-   * =========================================================
-   * SETTINGS EVENTS
-   * =========================================================
-   */
-
-  function setupSettings() {
-    const save =
-      $("saveSettings");
-
-    if (save) {
-      save.addEventListener(
-        "click",
-        saveSettings
-      );
-    }
-
-    const provider =
-      $("provider");
-
-    if (provider) {
-      provider.addEventListener(
-        "change",
-        () => {
-          const selected =
-            provider.value;
-
-          const config =
-            PROVIDERS[selected];
-
-          if (!config) return;
-
-          const current =
-            $("model")
-              ?.value
-              .trim() || "";
-
-          const previous =
-            PROVIDERS[
-              settings.provider
-            ]?.model || "";
-
-          if (
-            !current ||
-            current === previous
-          ) {
-            $("model").value =
-              config.model;
-          }
-
-          /*
-           * Gemini migration.
-           */
-
-          if (
-            selected === "gemini" ||
-            selected === "google" ||
-            selected === "google-gemini"
-          ) {
-            $("model").value =
-              normalizeGeminiModel(
-                $("model").value
-              ) ||
-              "gemini-3.6-flash";
-
-            if ($("endpoint")) {
-              $("endpoint").value =
-                "";
+    const payload = {
+      contents: [
+        {
+          role: "user",
+          parts: [
+            {
+              text: message
             }
-          }
+          ]
+        }
+      ],
+      generationConfig: {
+        temperature: 0.7
+      }
+    };
 
-          settings.provider =
-            selected;
+    const response =
+      await fetch(
+        url,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type":
+              "application/json",
+            "x-goog-api-key":
+              apiKey
+          },
+          body:
+            JSON.stringify(payload)
         }
       );
+
+    const data =
+      await safeJson(response);
+
+    // --------------------------------------------------------
+    // Gemini API error
+    // --------------------------------------------------------
+
+    if (!response.ok) {
+      const providerMessage =
+        extractGeminiError(data);
+
+      return res.status(
+        normalizeStatus(response.status)
+      ).json({
+        ok: false,
+        error:
+          `Gemini API error (${response.status}): ${providerMessage}`,
+        provider: "gemini",
+        model,
+        status: response.status,
+        details: data
+      });
     }
 
-    const quick =
-      $("modelQuick");
+    // --------------------------------------------------------
+    // Extract Gemini response
+    // --------------------------------------------------------
 
-    if (quick) {
-      quick.addEventListener(
-        "change",
-        () => {
-          const value =
-            quick.value;
+    const reply =
+      extractGeminiText(data);
 
-          if (!value) return;
-
-          settings.model =
-            normalizeModel(
-              settings.provider,
-              value
-            );
-
-          if ($("model")) {
-            $("model").value =
-              settings.model;
-          }
-
-          persistSettings();
-        }
-      );
+    if (!reply) {
+      return res.status(502).json({
+        ok: false,
+        error:
+          "Gemini berhasil merespons, tetapi tidak ada teks jawaban.",
+        provider: "gemini",
+        model,
+        raw: data
+      });
     }
+
+    return res.status(200).json({
+      ok: true,
+      reply,
+      provider: "gemini",
+      model,
+      test,
+      usage:
+        data?.usageMetadata || null
+    });
+
+  } catch (error) {
+    console.error(
+      "GEMINI ERROR:",
+      error
+    );
+
+    return res.status(500).json({
+      ok: false,
+      error:
+        error?.message ||
+        "Gemini request failed.",
+      provider: "gemini",
+      model
+    });
+  }
+}
+
+
+// ============================================================
+// NORMALIZE OPENAI ENDPOINT
+// ============================================================
+
+function normalizeChatEndpoint(endpoint) {
+  let url =
+    String(endpoint || "").trim();
+
+  if (!url) {
+    return url;
   }
 
-  /*
-   * =========================================================
-   * THEME
-   * =========================================================
-   */
+  // Remove trailing slash
+  url = url.replace(/\/+$/, "");
 
-  function setupTheme() {
-    const button =
-      $("themeBtn");
+  // Already correct
+  if (
+    /\/chat\/completions$/i.test(url)
+  ) {
+    return url;
+  }
 
-    if (!button) return;
-
-    button.addEventListener(
-      "click",
-      () => {
-        const light =
-          document.body.dataset.theme !==
-          "light";
-
-        document.body.dataset.theme =
-          light
-            ? "light"
-            : "dark";
-
-        if (light) {
-          document.documentElement.style.setProperty(
-            "--bg",
-            "#f7f7f7"
-          );
-
-          document.documentElement.style.setProperty(
-            "--sidebar",
-            "#eeeeee"
-          );
-
-          document.documentElement.style.setProperty(
-            "--text",
-            "#171717"
-          );
-        } else {
-          document.documentElement.style.setProperty(
-            "--bg",
-            "#0b0b0b"
-          );
-
-          document.documentElement.style.setProperty(
-            "--sidebar",
-            "#101010"
-          );
-
-          document.documentElement.style.setProperty(
-            "--text",
-            "#f1f1f1"
-          );
-        }
-      }
+  // If user entered /completions
+  if (
+    /\/completions$/i.test(url)
+  ) {
+    return url.replace(
+      /\/completions$/i,
+      "/chat/completions"
     );
   }
 
-  /*
-   * =========================================================
-   * KEYBOARD SHORTCUTS
-   * =========================================================
-   */
+  // If user entered /v1
+  if (
+    /\/v1$/i.test(url)
+  ) {
+    return `${url}/chat/completions`;
+  }
 
-  function setupKeyboardShortcuts() {
-    document.addEventListener(
-      "keydown",
-      (event) => {
-        /*
-         * Cmd/Ctrl + K
-         * Focus prompt.
-         */
+  // If user entered API root
+  if (
+    /\/api$/i.test(url)
+  ) {
+    return `${url}/chat/completions`;
+  }
 
-        if (
-          (event.metaKey ||
-            event.ctrlKey) &&
-          event.key.toLowerCase() ===
-            "k"
-        ) {
-          event.preventDefault();
+  // Generic endpoint
+  return `${url}/chat/completions`;
+}
 
-          $("prompt")?.focus();
-        }
 
-        /*
-         * Escape
-         * Clear prompt.
-         */
+// ============================================================
+// NORMALIZE GEMINI ENDPOINT
+// ============================================================
 
-        if (
-          event.key === "Escape" &&
-          document.activeElement ===
-            $("prompt")
-        ) {
-          $("prompt").value = "";
-        }
-      }
+function normalizeGeminiEndpoint(
+  endpoint,
+  model
+) {
+  let url =
+    String(endpoint || "").trim();
+
+  url =
+    url.replace(/\/+$/, "");
+
+  // If endpoint already contains a model path
+  if (
+    /\/models\/[^/]+:generateContent$/i.test(url)
+  ) {
+    return url.replace(
+      /\/models\/[^/]+:generateContent$/i,
+      `/models/${encodeURIComponent(
+        model
+      )}:generateContent`
     );
   }
 
-  /*
-   * =========================================================
-   * INITIALIZE
-   * =========================================================
-   */
-
-  function init() {
-    /*
-     * Persist migrated settings.
-     */
-    persistSettings();
-
-    syncSettingsUI();
-
-    setupNavigation();
-
-    setupChat();
-
-    setupNewChat();
-
-    setupSettings();
-
-    setupTheme();
-
-    setupKeyboardShortcuts();
-
-    showView("chat");
+  // Generic Google v1/v1beta endpoint
+  if (
+    /generativelanguage\.googleapis\.com\/v1beta$/i.test(
+      url
+    )
+  ) {
+    return `${url}/models/${encodeURIComponent(
+      model
+    )}:generateContent`;
   }
 
   if (
-    document.readyState ===
-    "loading"
+    /generativelanguage\.googleapis\.com\/v1$/i.test(
+      url
+    )
   ) {
-    document.addEventListener(
-      "DOMContentLoaded",
-      init
-    );
-  } else {
-    init();
+    return `${url}/models/${encodeURIComponent(
+      model
+    )}:generateContent`;
   }
-})();
+
+  // Bare Google API domain
+  if (
+    /generativelanguage\.googleapis\.com$/i.test(
+      url
+    )
+  ) {
+    return `${url}/v1beta/models/${encodeURIComponent(
+      model
+    )}:generateContent`;
+  }
+
+  return url;
+}
+
+
+// ============================================================
+// EXTRACT GEMINI TEXT
+// ============================================================
+
+function extractGeminiText(data) {
+  const candidates =
+    Array.isArray(data?.candidates)
+      ? data.candidates
+      : [];
+
+  const texts = [];
+
+  for (const candidate of candidates) {
+    const parts =
+      Array.isArray(
+        candidate?.content?.parts
+      )
+        ? candidate.content.parts
+        : [];
+
+    for (const part of parts) {
+      if (
+        typeof part?.text === "string" &&
+        part.text.trim()
+      ) {
+        texts.push(
+          part.text.trim()
+        );
+      }
+    }
+  }
+
+  return texts.join("\n");
+}
+
+
+// ============================================================
+// EXTRACT OPENAI-COMPATIBLE TEXT
+// ============================================================
+
+function extractOpenAICompatibleText(data) {
+  // Standard OpenAI
+  const standard =
+    data?.choices?.[0]?.message?.content;
+
+  if (
+    typeof standard === "string" &&
+    standard.trim()
+  ) {
+    return standard.trim();
+  }
+
+  // Some providers return array content
+  if (
+    Array.isArray(standard)
+  ) {
+    const text =
+      standard
+        .map((item) => {
+          if (
+            typeof item === "string"
+          ) {
+            return item;
+          }
+
+          return (
+            item?.text ||
+            item?.content ||
+            ""
+          );
+        })
+        .filter(Boolean)
+        .join("");
+
+    if (text.trim()) {
+      return text.trim();
+    }
+  }
+
+  // Some compatible APIs
+  const direct =
+    data?.choices?.[0]?.text;
+
+  if (
+    typeof direct === "string" &&
+    direct.trim()
+  ) {
+    return direct.trim();
+  }
+
+  // Fallback
+  const outputText =
+    data?.output_text;
+
+  if (
+    typeof outputText === "string" &&
+    outputText.trim()
+  ) {
+    return outputText.trim();
+  }
+
+  return "";
+}
+
+
+// ============================================================
+// ERROR EXTRACTION
+// ============================================================
+
+function extractProviderError(data) {
+  if (!data) {
+    return "Unknown provider error.";
+  }
+
+  if (
+    typeof data?.error === "string"
+  ) {
+    return data.error;
+  }
+
+  if (
+    typeof data?.error?.message === "string"
+  ) {
+    return data.error.message;
+  }
+
+  if (
+    typeof data?.message === "string"
+  ) {
+    return data.message;
+  }
+
+  if (
+    typeof data?.detail === "string"
+  ) {
+    return data.detail;
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return "Unknown provider error.";
+  }
+}
+
+
+function extractGeminiError(data) {
+  if (!data) {
+    return "Unknown Gemini error.";
+  }
+
+  if (
+    typeof data?.error?.message === "string"
+  ) {
+    return data.error.message;
+  }
+
+  if (
+    typeof data?.error === "string"
+  ) {
+    return data.error;
+  }
+
+  if (
+    typeof data?.message === "string"
+  ) {
+    return data.message;
+  }
+
+  try {
+    return JSON.stringify(data);
+  } catch {
+    return "Unknown Gemini error.";
+  }
+}
+
+
+// ============================================================
+// SAFE JSON
+// ============================================================
+
+async function safeJson(response) {
+  const text =
+    await response.text();
+
+  if (!text) {
+    return {};
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch {
+    return {
+      raw: text
+    };
+  }
+}
+
+
+// ============================================================
+// STATUS NORMALIZATION
+// ============================================================
+
+function normalizeStatus(status) {
+  const code =
+    Number(status);
+
+  if (
+    code >= 400 &&
+    code <= 599
+  ) {
+    return code;
+  }
+
+  return 502;
+}
+
+
+// ============================================================
+// REQUEST ORIGIN
+// ============================================================
+
+function getRequestOrigin(req) {
+  try {
+    const protocol =
+      req.headers["x-forwarded-proto"] ||
+      "https";
+
+    const host =
+      req.headers["x-forwarded-host"] ||
+      req.headers.host ||
+      "";
+
+    if (!host) {
+      return "https://opencodelolo-10.vercel.app";
+    }
+
+    return `${protocol}://${host}`;
+  } catch {
+    return "https://opencodelolo-10.vercel.app";
+  }
+}
 ```
