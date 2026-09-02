@@ -1,7 +1,14 @@
+```js
 (() => {
   "use strict";
 
   const $ = (id) => document.getElementById(id);
+
+  /*
+   * =========================================================
+   * PROVIDERS
+   * =========================================================
+   */
 
   const PROVIDERS = {
     openai: {
@@ -18,7 +25,7 @@
 
     gemini: {
       name: "Google Gemini",
-      model: "gemini-2.5-flash",
+      model: "gemini-3.6-flash",
       endpoint: ""
     },
 
@@ -40,6 +47,18 @@
       endpoint: ""
     },
 
+    together: {
+      name: "Together AI",
+      model: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
+      endpoint: ""
+    },
+
+    fireworks: {
+      name: "Fireworks AI",
+      model: "accounts/fireworks/models/llama-v3p1-70b-instruct",
+      endpoint: ""
+    },
+
     custom: {
       name: "Custom",
       model: "",
@@ -58,16 +77,100 @@
   let settings = loadSettings();
   let messages = [];
 
+
+  /*
+   * =========================================================
+   * MODEL NORMALIZATION
+   * =========================================================
+   */
+
+  function normalizeGeminiModel(model) {
+    let value = String(model || "").trim();
+
+    value = value.replace(/^models\//i, "");
+
+    if (
+      !value ||
+      value === "gemini-2.5-flash" ||
+      value === "gemini-2.5-flash-latest"
+    ) {
+      return "gemini-3.6-flash";
+    }
+
+    return value;
+  }
+
+  function normalizeModel(provider, model) {
+    const value = String(model || "").trim();
+
+    if (
+      provider === "gemini" ||
+      provider === "google" ||
+      provider === "google-gemini"
+    ) {
+      return normalizeGeminiModel(value);
+    }
+
+    return value;
+  }
+
+
+  /*
+   * =========================================================
+   * SETTINGS
+   * =========================================================
+   */
+
   function loadSettings() {
     try {
       const saved = JSON.parse(
         localStorage.getItem("ocl_settings") || "{}"
       );
 
-      return {
+      const merged = {
         ...DEFAULTS,
         ...saved
       };
+
+      /*
+       * Migrate old Gemini model.
+       */
+      if (
+        merged.provider === "gemini" &&
+        (
+          merged.model === "gemini-2.5-flash" ||
+          merged.model === "gemini-2.5-flash-latest" ||
+          merged.model === "models/gemini-2.5-flash"
+        )
+      ) {
+        merged.model = "gemini-3.6-flash";
+      }
+
+      /*
+       * Remove old "models/" prefix.
+       */
+      if (merged.provider === "gemini") {
+        merged.model = normalizeGeminiModel(
+          merged.model
+        );
+      }
+
+      /*
+       * Google Gemini should use backend default
+       * when endpoint is empty.
+       */
+      if (
+        merged.provider === "gemini" &&
+        merged.endpoint &&
+        merged.endpoint.includes(
+          "gemini-2.5-flash"
+        )
+      ) {
+        merged.endpoint = "";
+      }
+
+      return merged;
+
     } catch {
       return {
         ...DEFAULTS
@@ -75,12 +178,14 @@
     }
   }
 
+
   function persistSettings() {
     localStorage.setItem(
       "ocl_settings",
       JSON.stringify(settings)
     );
   }
+
 
   function syncSettingsUI() {
     if (!$("provider")) return;
@@ -100,6 +205,7 @@
     updateQuickModel();
     updateConnectionStatus();
   }
+
 
   function updateQuickModel() {
     const select = $("modelQuick");
@@ -121,6 +227,7 @@
     select.appendChild(option);
   }
 
+
   function updateConnectionStatus() {
     const button =
       $("saveSettings");
@@ -139,6 +246,13 @@
         "Save Settings";
     }
   }
+
+
+  /*
+   * =========================================================
+   * VIEW / NAVIGATION
+   * =========================================================
+   */
 
   function showView(name) {
     document
@@ -173,6 +287,13 @@
     }
   }
 
+
+  /*
+   * =========================================================
+   * CHAT UI
+   * =========================================================
+   */
+
   function clearChat() {
     messages = [];
 
@@ -199,6 +320,7 @@
       </div>
     `;
   }
+
 
   function addMessage(role, text) {
     const box =
@@ -250,16 +372,108 @@
     return element;
   }
 
+
   function addSystemNotice(text) {
     addMessage("ai", text);
   }
+
+
+  /*
+   * =========================================================
+   * PROVIDER
+   * =========================================================
+   */
+
+  function setProvider(provider) {
+    const config =
+      PROVIDERS[provider];
+
+    if (!config) return;
+
+    const previousProvider =
+      settings.provider;
+
+    const currentModel =
+      $("model")?.value.trim() || "";
+
+    const previousModel =
+      PROVIDERS[
+        previousProvider
+      ]?.model || "";
+
+    settings.provider =
+      provider;
+
+    /*
+     * Only replace model when user was
+     * using the previous provider's default.
+     */
+    if (
+      !currentModel ||
+      currentModel === previousModel
+    ) {
+      if ($("model")) {
+        $("model").value =
+          config.model;
+      }
+
+      settings.model =
+        config.model;
+    }
+
+    /*
+     * Provider-specific endpoint.
+     */
+    if (
+      $("endpoint") &&
+      config.endpoint
+    ) {
+      $("endpoint").value =
+        config.endpoint;
+
+      settings.endpoint =
+        config.endpoint;
+    }
+
+    /*
+     * Gemini normalization.
+     */
+    if (provider === "gemini") {
+      settings.model =
+        normalizeGeminiModel(
+          $("model")?.value || ""
+        );
+
+      if ($("model")) {
+        $("model").value =
+          settings.model;
+      }
+
+      /*
+       * Let backend generate the official
+       * Gemini endpoint automatically.
+       */
+      if ($("endpoint")) {
+        $("endpoint").value = "";
+      }
+
+      settings.endpoint = "";
+    }
+  }
+
+
+  /*
+   * =========================================================
+   * SAVE SETTINGS
+   * =========================================================
+   */
 
   function saveSettings() {
     const provider =
       $("provider")?.value ||
       "openai";
 
-    const model =
+    let model =
       $("model")?.value.trim() ||
       "";
 
@@ -271,24 +485,37 @@
       $("endpoint")?.value.trim() ||
       "";
 
+    model =
+      normalizeModel(
+        provider,
+        model
+      );
+
     settings = {
       ...settings,
+
       provider,
+
       model,
+
       apiKey,
+
       endpoint,
+
       active:
-        Boolean(apiKey && model)
+        Boolean(
+          apiKey &&
+          model
+        )
     };
 
     persistSettings();
+
     syncSettingsUI();
 
     showView("chat");
 
-    if (
-      settings.active
-    ) {
+    if (settings.active) {
       addSystemNotice(
         `AI aktif: ${
           PROVIDERS[provider]?.name ||
@@ -302,40 +529,138 @@
     }
   }
 
-  function setProvider(provider) {
-    const config =
-      PROVIDERS[provider];
 
-    if (!config) return;
+  /*
+   * =========================================================
+   * BUILD BACKEND REQUEST
+   * =========================================================
+   */
 
-    settings.provider =
-      provider;
+  function buildRequestBody(
+    message,
+    test = false
+  ) {
+    const provider =
+      String(
+        settings.provider ||
+        "openai"
+      ).trim().toLowerCase();
 
     const model =
-      $("model")?.value.trim() ||
-      "";
+      normalizeModel(
+        provider,
+        settings.model
+      );
 
-    if (
-      !model ||
-      model ===
-        PROVIDERS[
-          settings.provider
-        ]?.model
-    ) {
-      if ($("model")) {
-        $("model").value =
-          config.model;
-      }
+    let endpoint =
+      String(
+        settings.endpoint || ""
+      ).trim();
+
+    /*
+     * Gemini:
+     * Backend handles the official endpoint.
+     */
+    if (provider === "gemini") {
+      endpoint = "";
     }
 
-    if (
-      $("endpoint") &&
-      config.endpoint
-    ) {
-      $("endpoint").value =
-        config.endpoint;
-    }
+    return {
+      message: String(message).trim(),
+
+      provider,
+
+      model,
+
+      apiKey:
+        String(
+          settings.apiKey || ""
+        ).trim(),
+
+      endpoint,
+
+      test
+    };
   }
+
+
+  /*
+   * =========================================================
+   * API REQUEST
+   * =========================================================
+   */
+
+  async function requestAI(
+    message,
+    test = false
+  ) {
+    const payload =
+      buildRequestBody(
+        message,
+        test
+      );
+
+    const response =
+      await fetch(
+        "/api/chat",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+            "Accept":
+              "application/json"
+          },
+
+          body:
+            JSON.stringify(
+              payload
+            )
+        }
+      );
+
+    const raw =
+      await response.text();
+
+    let data = {};
+
+    try {
+      data =
+        raw
+          ? JSON.parse(raw)
+          : {};
+    } catch {
+      throw new Error(
+        `Server mengembalikan response yang bukan JSON (${response.status}).`
+      );
+    }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        `Server error (${response.status})`
+      );
+    }
+
+    if (
+      data.ok === false
+    ) {
+      throw new Error(
+        data.error ||
+        "AI request ditolak."
+      );
+    }
+
+    return data;
+  }
+
+
+  /*
+   * =========================================================
+   * TEST CONNECTION
+   * =========================================================
+   */
 
   async function testConnection() {
     if (!settings.apiKey) {
@@ -358,6 +683,15 @@
       return;
     }
 
+    /*
+     * Normalize old saved Gemini model.
+     */
+    settings.model =
+      normalizeModel(
+        settings.provider,
+        settings.model
+      );
+
     const button =
       $("saveSettings");
 
@@ -368,54 +702,24 @@
     }
 
     try {
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              message:
-                "Reply with exactly: CONNECTION_OK",
-
-              provider:
-                settings.provider,
-
-              model:
-                settings.model,
-
-              apiKey:
-                settings.apiKey,
-
-              endpoint:
-                settings.endpoint,
-
-              test: true
-            })
-          }
-        );
-
       const data =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (
-        !response.ok ||
-        data.ok === false
-      ) {
-        throw new Error(
-          data.error ||
-          `Connection failed (${response.status})`
+        await requestAI(
+          "Reply with exactly: CONNECTION_OK",
+          true
         );
-      }
 
       settings.active = true;
+
+      /*
+       * Backend returns normalized model.
+       */
+      if (data.model) {
+        settings.model =
+          normalizeModel(
+            settings.provider,
+            data.model
+          );
+      }
 
       persistSettings();
       syncSettingsUI();
@@ -430,6 +734,7 @@
           settings.model
         }`
       );
+
     } catch (error) {
       alert(
         "Connection gagal:\n\n" +
@@ -438,6 +743,7 @@
           "Unknown error"
         )
       );
+
     } finally {
       if (button) {
         button.disabled =
@@ -447,6 +753,13 @@
       }
     }
   }
+
+
+  /*
+   * =========================================================
+   * SEND MESSAGE
+   * =========================================================
+   */
 
   async function sendMessage() {
     const input =
@@ -479,6 +792,15 @@
       return;
     }
 
+    /*
+     * Always normalize before request.
+     */
+    settings.model =
+      normalizeModel(
+        settings.provider,
+        settings.model
+      );
+
     settings.active = true;
 
     persistSettings();
@@ -500,55 +822,11 @@
       );
 
     try {
-      const response =
-        await fetch(
-          "/api/chat",
-          {
-            method: "POST",
-
-            headers: {
-              "Content-Type":
-                "application/json"
-            },
-
-            body: JSON.stringify({
-              message,
-
-              provider:
-                settings.provider,
-
-              model:
-                settings.model,
-
-              apiKey:
-                settings.apiKey,
-
-              endpoint:
-                settings.endpoint
-            })
-          }
-        );
-
       const data =
-        await response
-          .json()
-          .catch(() => ({}));
-
-      if (!response.ok) {
-        throw new Error(
-          data.error ||
-          `Server error (${response.status})`
+        await requestAI(
+          message,
+          false
         );
-      }
-
-      if (
-        data.ok === false
-      ) {
-        throw new Error(
-          data.error ||
-          "AI request ditolak."
-        );
-      }
 
       const reply =
         data.reply ||
@@ -561,10 +839,26 @@
         );
       }
 
+      /*
+       * Keep frontend model synchronized
+       * with backend normalized model.
+       */
+      if (data.model) {
+        settings.model =
+          normalizeModel(
+            settings.provider,
+            data.model
+          );
+
+        persistSettings();
+        updateQuickModel();
+      }
+
       if (pending) {
         pending.textContent =
           reply;
       }
+
     } catch (error) {
       if (pending) {
         pending.textContent =
@@ -576,6 +870,13 @@
       }
     }
   }
+
+
+  /*
+   * =========================================================
+   * NAVIGATION
+   * =========================================================
+   */
 
   function setupNavigation() {
     document
@@ -593,6 +894,13 @@
         );
       });
   }
+
+
+  /*
+   * =========================================================
+   * CHAT
+   * =========================================================
+   */
 
   function setupChat() {
     const send =
@@ -617,6 +925,7 @@
             !event.shiftKey
           ) {
             event.preventDefault();
+
             sendMessage();
           }
         }
@@ -638,6 +947,13 @@
     }
   }
 
+
+  /*
+   * =========================================================
+   * NEW CHAT
+   * =========================================================
+   */
+
   function setupNewChat() {
     const button =
       $("newChat");
@@ -648,11 +964,20 @@
       "click",
       () => {
         clearChat();
+
         showView("chat");
+
         $("prompt")?.focus();
       }
     );
   }
+
+
+  /*
+   * =========================================================
+   * SETTINGS UI
+   * =========================================================
+   */
 
   function setupSettings() {
     const save =
@@ -690,6 +1015,9 @@
               settings.provider
             ]?.model || "";
 
+          settings.provider =
+            selected;
+
           if (
             !current ||
             current === previous
@@ -698,8 +1026,34 @@
               config.model;
           }
 
-          settings.provider =
-            selected;
+          if (
+            selected ===
+            "gemini"
+          ) {
+            $("model").value =
+              normalizeGeminiModel(
+                $("model").value
+              );
+
+            $("endpoint").value =
+              "";
+
+          }
+
+          settings.model =
+            normalizeModel(
+              selected,
+              $("model").value
+            );
+
+          settings.endpoint =
+            selected === "gemini"
+              ? ""
+              : (
+                  $("endpoint")
+                    ?.value
+                    .trim() || ""
+                );
         }
       );
     }
@@ -717,11 +1071,14 @@
           if (!value) return;
 
           settings.model =
-            value;
+            normalizeModel(
+              settings.provider,
+              value
+            );
 
           if ($("model")) {
             $("model").value =
-              value;
+              settings.model;
           }
 
           persistSettings();
@@ -729,6 +1086,13 @@
       );
     }
   }
+
+
+  /*
+   * =========================================================
+   * THEME
+   * =========================================================
+   */
 
   function setupTheme() {
     const button =
@@ -783,6 +1147,13 @@
     );
   }
 
+
+  /*
+   * =========================================================
+   * KEYBOARD SHORTCUTS
+   * =========================================================
+   */
+
   function setupKeyboardShortcuts() {
     document.addEventListener(
       "keydown",
@@ -808,34 +1179,59 @@
 
           clearChat();
           showView("chat");
+
+          $("prompt")?.focus();
         }
       }
     );
   }
 
+
+  /*
+   * =========================================================
+   * INIT
+   * =========================================================
+   */
+
   function init() {
+    /*
+     * Normalize old localStorage data.
+     */
+    settings.provider =
+      settings.provider ||
+      "openai";
+
+    settings.model =
+      normalizeModel(
+        settings.provider,
+        settings.model
+      );
+
+    /*
+     * Gemini must not keep an old
+     * hardcoded endpoint.
+     */
+    if (
+      settings.provider ===
+      "gemini"
+    ) {
+      settings.endpoint = "";
+    }
+
+    persistSettings();
+
     setupNavigation();
     setupChat();
     setupNewChat();
     setupSettings();
     setupTheme();
     setupKeyboardShortcuts();
+
     syncSettingsUI();
+
+    showView("chat");
   }
 
-  window.OpenCodeLolo = {
-    sendMessage,
-    saveSettings,
-    testConnection,
-    clearChat,
-    showView,
-
-    getSettings() {
-      return {
-        ...settings
-      };
-    }
-  };
 
   if (
     document.readyState ===
@@ -848,4 +1244,6 @@
   } else {
     init();
   }
+
 })();
+```
